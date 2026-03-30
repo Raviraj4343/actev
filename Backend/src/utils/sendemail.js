@@ -44,7 +44,7 @@ const sendVerificationEmail = async (email, name, token) => {
               Verify My Email
             </a>
           </div>
-          <p style="color: #999; font-size: 14px;">This link expires in <strong>24 hours</strong>. If you didn't create an account, you can safely ignore this email.</p>
+                 <p style="color: #999; font-size: 14px;">This link expires in <strong>${process.env.EMAIL_VERIFICATION_EXPIRE_TIME || "24 hours"}</strong>. If you didn't create an account, you can safely ignore this email.</p>
           <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
           <p style="color: #ccc; font-size: 12px; text-align: center;">Health Tracker App © ${new Date().getFullYear()}</p>
         </div>
