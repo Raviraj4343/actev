@@ -13,7 +13,7 @@ export default function Layout({ children }){
 
   return (
     <div className="app-root">
-      {showSidebar && (
+      {(showSidebar || sidebarOpen) && (
         <Sidebar isOpen={sidebarOpen} onClose={()=>setSidebarOpen(false)} />
       )}
       <div className={`main-area ${showSidebar ? 'has-sidebar' : 'no-sidebar'}`}>

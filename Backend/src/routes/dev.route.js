@@ -24,3 +24,16 @@ router.post('/test-email', asyncHandler(async (req, res) => {
 }))
 
 export default router
+
+// Development-only debug: report email config presence (does NOT return secret values)
+router.get('/email-config', (req, res) => {
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(404).json({ success: false, message: 'Not available in production' })
+  }
+
+  return res.status(200).json({
+    success: true,
+    BREVO_API_KEY_PRESENT: Boolean(process.env.BREVO_API_KEY),
+    SENDER_EMAIL: process.env.SENDER_EMAIL || null,
+  })
+})

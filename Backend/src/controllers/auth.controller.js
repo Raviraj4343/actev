@@ -7,6 +7,34 @@ import tokenUtils from "../utils/gererateToken.js";
 import sendemail from "../utils/sendemail.js";
 import { COOKIE_OPTIONS } from "../constants.js";
 
+const parseExpiryToMs = (value, fallbackMs) => {
+  if (value === undefined || value === null) return fallbackMs;
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+
+  const raw = String(value).trim().toLowerCase();
+  if (!raw) return fallbackMs;
+
+  if (/^\d+$/.test(raw)) {
+    // Plain integers are treated as seconds for env friendliness.
+    return Number(raw) * 1000;
+  }
+
+  const m = raw.match(/^(\d+)(ms|s|m|h|d)$/);
+  if (!m) return fallbackMs;
+
+  const amount = Number(m[1]);
+  const unit = m[2];
+  const unitMs = {
+    ms: 1,
+    s: 1000,
+    m: 60 * 1000,
+    h: 60 * 60 * 1000,
+    d: 24 * 60 * 60 * 1000,
+  };
+
+  return amount * unitMs[unit];
+};
+
 
 const issueTokens = async (user, res) => {
   const accessToken = tokenUtils.generateAccessToken(user._id);
@@ -16,13 +44,16 @@ const issueTokens = async (user, res) => {
   user.refreshToken = refreshToken;
   await user.save({ validateBeforeSave: false });
 
+  const accessMaxAgeMs = parseExpiryToMs(process.env.ACCESS_TOKEN_EXPIRATION, 24 * 60 * 60 * 1000);
+  const refreshMaxAgeMs = parseExpiryToMs(process.env.REFRESH_TOKEN_EXPIRATION, 7 * 24 * 60 * 60 * 1000);
+
   const accessCookieOpts = {
     ...COOKIE_OPTIONS,
-    maxAge: process.env.ACCESS_TOKEN_EXPIRATION, 
+    maxAge: accessMaxAgeMs,
   };
   const refreshCookieOpts = {
     ...COOKIE_OPTIONS,
-    maxAge: process.env.REFRESH_TOKEN_EXPIRATION, 
+    maxAge: refreshMaxAgeMs,
   };
 
   res
@@ -44,18 +75,29 @@ const signup = asyncHandler(async (req, res) => {
     }
 
     const user = await User.create({ name, email, password });
-      // Send verification email and report back whether the send succeeded
-      const verifyToken_ = tokenUtils.generateEmailVerifyToken(user._id);
-      let emailSent = true;
-      try {
-        await sendemail.sendVerificationEmail(email, user.name, verifyToken_);
-      } catch (emailErr) {
-        emailSent = false;
-        console.error("Email send failed:", emailErr && emailErr.stack ? emailErr.stack : emailErr.message || emailErr);
-        // don't block signup; frontend may offer a resend option
-      }
+        // Generate a 6-digit verification code, store its hash and expiry, and send it
+        const code = Math.floor(100000 + Math.random() * 900000).toString();
+        const hashed = crypto.createHash('sha256').update(code).digest('hex');
+        user.emailVerificationCode = hashed;
+        const expireMs = parseInt(process.env.EMAIL_VERIFICATION_EXPIRE_MS) || (parseInt(process.env.EMAIL_VERIFICATION_EXPIRE_MINUTES) ? parseInt(process.env.EMAIL_VERIFICATION_EXPIRE_MINUTES) * 60 * 1000 : 15 * 60 * 1000);
+        user.emailVerificationExpires = Date.now() + expireMs;
+        await user.save({ validateBeforeSave: false });
 
-      const respData = { userId: user._id, email: user.email, emailSent };
+        let emailSent = true;
+        try {
+          console.log('signup: sending verification — BREVO key present:', Boolean(process.env.BREVO_API_KEY), 'SENDER_EMAIL:', process.env.SENDER_EMAIL)
+          await sendemail.sendVerificationEmail(email, user.name, code, { isCode: true });
+        } catch (emailErr) {
+          emailSent = false;
+          console.error('signup: Email send failed — env:', {
+            BREVO: Boolean(process.env.BREVO_API_KEY),
+            SENDER_EMAIL: process.env.SENDER_EMAIL,
+          })
+          console.error('signup: send error stack:', emailErr && emailErr.stack ? emailErr.stack : emailErr);
+          // don't block signup; frontend may offer a resend option
+        }
+
+        const respData = { userId: user._id, email: user.email, emailSent };
 
       return res.status(201).json(
         new ApiResponse(
@@ -113,20 +155,37 @@ const resendVerification = asyncHandler(async (req, res) => {
       .json(new ApiResponse(200, null, "Email is already verified."));
   }
 
-  const verifyToken_ = tokenUtils.generateEmailVerifyToken(user._id);
-  let emailSent = true;
   try {
-    await sendemail.sendVerificationEmail(email, user.name, verifyToken_);
-  } catch (e) {
-    emailSent = false;
-    console.error('resendVerification: email send failed', e && e.stack ? e.stack : e);
-  }
-  const respData = { emailSent };
-  if (process.env.NODE_ENV !== 'production') respData.verifyToken = verifyToken_;
+    // Generate a fresh 6-digit code and store its hash+expiry
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const hashed = crypto.createHash('sha256').update(code).digest('hex');
+    user.emailVerificationCode = hashed;
+    user.emailVerificationExpires = Date.now() + (parseInt(process.env.EMAIL_VERIFICATION_EXPIRE_MS) || 15 * 60 * 1000);
+    await user.save({ validateBeforeSave: false });
 
-  return res
-    .status(200)
-    .json(new ApiResponse(200, respData, emailSent ? "Verification email resent." : "Could not send verification email."));
+    console.log('resendVerification: sending code — env:', {
+      BREVO: Boolean(process.env.BREVO_API_KEY),
+      SENDER_EMAIL: process.env.SENDER_EMAIL,
+    })
+    console.log('resendVerification: invoking sendemail.sendVerificationEmail for', email)
+
+    let emailSent = true;
+    try {
+      await sendemail.sendVerificationEmail(email, user.name, code, { isCode: true });
+    } catch (e) {
+      emailSent = false;
+      console.error('resendVerification: email send failed — error:', e && e.stack ? e.stack : e);
+    }
+
+    const respData = { emailSent };
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, respData, emailSent ? "Verification email resent." : "Could not send verification email."));
+  } catch (err) {
+    console.error('resendVerification: unexpected error', err && err.stack ? err.stack : err);
+    throw err;
+  }
 });
 
 

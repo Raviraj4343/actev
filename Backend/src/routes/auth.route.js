@@ -2,6 +2,10 @@ import express from "express";
 import { body } from "express-validator";
 import rateLimit from "express-rate-limit";
 import { signup, verifyEmail, resendVerification, forgotPassword, resetPassword, login, logout, refreshAccessToken, getMe } from "../controllers/auth.controller.js";
+import User from "../models/user.model.js";
+import ApiError from "../utils/ApiError.js";
+import ApiResponse from "../utils/ApiResponse.js";
+import crypto from "crypto";
 import { protect } from "../middlewares/auth.middleware.js";
 import validate from "../middlewares/validate.middleware.js";
 
@@ -38,6 +42,28 @@ const authLimiter = rateLimit({
 
 router.post("/signup", signupValidation, validate, signup);
 router.get("/verify-email", verifyEmail);
+router.post("/verify-code",
+  body('email').isEmail().withMessage('Valid email required'),
+  body('code').isLength({ min: 6, max: 6 }).withMessage('Code must be 6 characters'),
+  validate,
+  async (req, res, next) => {
+    // delegate to controller implementation below
+    try {
+      const { email, code } = req.body;
+      // Find user and validate code
+      const user = await User.findOne({ email }).select('+emailVerificationCode +emailVerificationExpires');
+      if (!user) return next(new ApiError(404, 'No account found with this email.'));
+      if (user.emailVerificationExpires < Date.now()) return next(new ApiError(400, 'Verification code expired.'));
+      const hashed = crypto.createHash('sha256').update(code).digest('hex');
+      if (user.emailVerificationCode !== hashed) return next(new ApiError(400, 'Invalid verification code.'));
+      user.isEmailVerified = true;
+      user.emailVerificationCode = undefined;
+      user.emailVerificationExpires = undefined;
+      await user.save({ validateBeforeSave: false });
+      return res.status(200).json(new ApiResponse(200, null, 'Email verified successfully! You can now log in.'));
+    } catch (err) { next(err) }
+  }
+);
 router.post("/resend-verification",
   body("email").isEmail().withMessage("Valid email required"),
   validate,

@@ -47,6 +47,11 @@ const userSchema = new mongoose.Schema(
       select: false,
     },
     passwordResetExpires: Date,
+    emailVerificationCode: {
+      type: String,
+      select: false,
+    },
+    emailVerificationExpires: Date,
 
     // ── Profile fields (one-time setup) ──
     profileCompleted: {

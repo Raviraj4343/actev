@@ -39,6 +39,10 @@ export function verifyEmail(token){
   return request(`/auth/verify-email?token=${encodeURIComponent(token)}`)
 }
 
+export function verifyCode(email, code){
+  return request('/auth/verify-code', { method: 'POST', body: { email, code } })
+}
+
 export function resendVerification(email){
   return request('/auth/resend-verification', { method: 'POST', body: { email } })
 }
@@ -195,6 +199,7 @@ export default {
   // auth
   signup,
   verifyEmail,
+  verifyCode,
   resendVerification,
   forgotPassword,
   resetPassword,

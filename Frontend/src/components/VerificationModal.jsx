@@ -29,11 +29,11 @@ export default function VerificationModal({ email, onClose }){
   }
 
   async function handleVerify(){
-    const token = values.join('').trim()
-    if(!token){ setMsg('Enter the verification token'); return }
+    const code = values.join('').trim()
+    if(!code){ setMsg('Enter the verification code'); return }
     setLoading(true); setMsg(null)
     try{
-      await api.verifyEmail(token)
+      await api.verifyCode(email, code)
       setMsg('Email verified — you can sign in now.')
       setTimeout(()=> onClose && onClose(true), 800)
     }catch(err){
