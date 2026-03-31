@@ -135,9 +135,4 @@ const deleteWeightLog = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, null, "Weight log deleted."));
 });
 
-export default {
-  logWeight,
-  getWeightHistory,
-  getWeeklySummary,
-  deleteWeightLog,
-};
+export { logWeight, getWeightHistory, getWeeklySummary, deleteWeightLog };

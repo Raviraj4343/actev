@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { DIET_PREFERENCES } from "../constants/index.js";
+import { DIET_PREFERENCES } from "../constants.js";
 
 const foodSchema = new mongoose.Schema(
   {

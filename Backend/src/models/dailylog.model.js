@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { MEAL_TYPES, WATER_LEVELS } from "../constants/index.js";
+import { MEAL_TYPES, WATER_LEVELS } from "../constants.js";
 
 const mealItemSchema = new mongoose.Schema(
   {

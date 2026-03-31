@@ -67,4 +67,4 @@ const getCategories = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, categories, "Categories fetched."));
 });
 
-export default { getAllFoods, searchFoods, getFoodById, getCategories };
+export { getAllFoods, searchFoods, getFoodById, getCategories };

@@ -156,4 +156,4 @@ const computeHealthScore = ({ avgCalories, requiredCalories, avgProtein, require
   return Math.max(score, 0);
 };
 
-export default { getTodayInsight, getWeeklySummary };
+export { getTodayInsight, getWeeklySummary };

@@ -1,5 +1,4 @@
 import nodemailer from "nodemailer";
-import Brevo from "@getbrevo/brevo";
 
 const createTransporter = () => {
   return nodemailer.createTransport({
@@ -13,9 +12,16 @@ const createTransporter = () => {
   });
 };
 
-const brevoClient = () => {
+const brevoClient = async () => {
   if (!process.env.BREVO_API_KEY) return null;
-  return new Brevo({ apiKey: process.env.BREVO_API_KEY });
+  try {
+    const mod = await import('@getbrevo/brevo');
+    const Brevo = mod.default || mod;
+    return new Brevo({ apiKey: process.env.BREVO_API_KEY });
+  } catch (e) {
+    console.warn('Brevo package not available:', e.message);
+    return null;
+  }
 };
 
 /**
@@ -52,7 +58,7 @@ const sendVerificationEmail = async (email, name, token) => {
       </div>
     `;
 
-  const brevo = brevoClient();
+  const brevo = await brevoClient();
   if (brevo) {
     const tranEmailApi = new brevo.TransactionalEmailsApi();
     const sendSmtpEmail = {
@@ -101,7 +107,7 @@ const sendPasswordResetEmail = async (email, name, token) => {
       </div>
     `;
 
-  const brevo = brevoClient();
+  const brevo = await brevoClient();
   if (brevo) {
     const tranEmailApi = new brevo.TransactionalEmailsApi();
     const sendSmtpEmail = {

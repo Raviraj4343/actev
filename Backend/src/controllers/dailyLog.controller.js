@@ -200,7 +200,7 @@ const getHistory = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, logs, `Last ${days} day history fetched.`));
 });
 
-export default {
+export {
   createOrUpdateDailyLog,
   updateMealSection,
   updateVitals,

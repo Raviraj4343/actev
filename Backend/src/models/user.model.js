@@ -5,7 +5,7 @@ import {
   GOALS,
   DIET_PREFERENCES,
   GENDER,
-} from "../constants/index.js";
+} from "../constants.js";
 
 const userSchema = new mongoose.Schema(
   {
