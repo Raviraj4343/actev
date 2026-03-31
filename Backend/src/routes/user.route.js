@@ -1,8 +1,8 @@
 import express from "express";
 import { body } from "express-validator";
 import { getProfile, setupProfile, updateProfile, getHealthStats } from "../controllers/user.controller.js";
-import { protect, requireEmailVerified } from "../middleware/auth.middleware.js";
-import validate from "../middleware/validate.middleware.js";
+import { protect, requireEmailVerified } from "../middlewares/auth.middleware.js";
+import validate from "../middlewares/validate.middleware.js";
 
 
 const router = express.Router();

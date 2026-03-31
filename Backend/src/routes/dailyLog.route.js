@@ -1,8 +1,10 @@
-const express = require("express");
-const { body } = require("express-validator");
-import { validate } from "../middleware/validation.middleware.js";
-import { protect, requireEmailVerified, requireProfileComplete } from "../middleware/auth.middleware.js";
+import express from "express";
+import { body } from "express-validator";
+import validate from "../middlewares/validate.middleware.js";
+import { protect, requireEmailVerified, requireProfileComplete } from "../middlewares/auth.middleware.js";
 import { createOrUpdateDailyLog, getTodayLog, getLogByDate, getHistory, updateMealSection, updateVitals } from "../controllers/dailyLog.controller.js";
+
+const router = express.Router();
 
 // All routes need full auth + profile
 router.use(protect, requireEmailVerified, requireProfileComplete);

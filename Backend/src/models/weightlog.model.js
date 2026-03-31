@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const weightLogSchema = new mongoose.Schema(
   {
@@ -29,4 +29,4 @@ const weightLogSchema = new mongoose.Schema(
 weightLogSchema.index({ userId: 1, date: 1 }, { unique: true });
 
 const WeightLog = mongoose.model("WeightLog", weightLogSchema);
-module.exports = WeightLog;
+export default WeightLog;

@@ -1,12 +1,9 @@
 import ApiError from "../utils/ApiError.js";
 import asyncHandler from "../utils/AsyncHandler.js";
-import { verifyToken } from "../utils/generateTokens.js";
-import User from "../models/user.model.js";
+import tokenUtils from "../utils/gererateToken.js";
+import User from "../models/User.model.js";
 
-/**
- * Protect routes – verifies the access token
- * Token can be in Authorization header or httpOnly cookie
- */
+
 const protect = asyncHandler(async (req, _res, next) => {
   let token;
 
@@ -28,7 +25,7 @@ const protect = asyncHandler(async (req, _res, next) => {
 
   let decoded;
   try {
-    decoded = verifyToken(token, process.env.ACCESS_TOKEN_SECRET);
+    decoded = tokenUtils.verifyToken(token, process.env.ACCESS_TOKEN_SECRET);
   } catch (err) {
     throw new ApiError(401, "Invalid or expired token. Please log in again.");
   }
@@ -42,9 +39,7 @@ const protect = asyncHandler(async (req, _res, next) => {
   next();
 });
 
-/**
- * Ensure email is verified before accessing protected resources
- */
+
 const requireEmailVerified = asyncHandler(async (req, _res, next) => {
   if (!req.user.isEmailVerified) {
     throw new ApiError(403, "Please verify your email address first.");
@@ -52,9 +47,7 @@ const requireEmailVerified = asyncHandler(async (req, _res, next) => {
   next();
 });
 
-/**
- * Ensure user profile is complete before accessing daily features
- */
+
 const requireProfileComplete = asyncHandler(async (req, _res, next) => {
   if (!req.user.profileCompleted) {
     throw new ApiError(403, "Please complete your profile setup first.");

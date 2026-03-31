@@ -1,9 +1,10 @@
-const express = require("express");
-const { body } = require("express-validator");
+import express from "express";
+import { body } from "express-validator";
+import { logWeight, getWeightHistory, getWeeklySummary, deleteWeightLog } from "../controllers/weightLog.controller.js";
+import { protect, requireEmailVerified, requireProfileComplete } from "../middlewares/auth.middleware.js";
+import validate from "../middlewares/validate.middleware.js";
+
 const router = express.Router();
-const {logWeight, getWeightHistory, getWeeklySummary, deleteWeightLog} = require("../controllers/weightLog.controller");
-const { protect, requireEmailVerified, requireProfileComplete } = require("../middleware/auth.middleware");
-const validate = require("../middleware/validate.middleware");
 
 router.use(protect, requireEmailVerified, requireProfileComplete);
 

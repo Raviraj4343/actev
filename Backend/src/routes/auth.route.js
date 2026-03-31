@@ -1,8 +1,8 @@
 import express from "express";
 import { body } from "express-validator";
 import { signup, verifyEmail, resendVerification, login, logout, refreshAccessToken, getMe } from "../controllers/auth.controller.js";
-import { protect } from "../middleware/auth.middleware.js";
-import validate from "../middleware/validate.middleware.js";
+import { protect } from "../middlewares/auth.middleware.js";
+import validate from "../middlewares/validate.middleware.js";
 
 
 const signupValidation = [
