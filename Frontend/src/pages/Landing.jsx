@@ -7,38 +7,53 @@ import '../styles/global.css'
 export default function Landing(){
   return (
     <div style={{minHeight:'100vh',display:'flex',flexDirection:'column'}}>
-      <header style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'20px 32px'}}>
-        <div style={{fontWeight:700,fontSize:20,color:'var(--color-primary)'}}>AQTEV</div>
-        <nav style={{display:'flex',gap:12,alignItems:'center'}}>
-          <Link to="/signin" style={{textDecoration:'none',color:'var(--color-muted)'}}>Sign in</Link>
-          <Link to="/signup"><Button variant="primary">Get started</Button></Link>
-        </nav>
-      </header>
 
       <main className="landing-main">
         <section className="hero">
-          <h1 style={{fontSize:'var(--fs-xxl)',margin:0}}>Smarter health tracking for professionals</h1>
-          <p style={{color:'var(--color-muted)',marginTop:12}}>AQTEV helps you collect, visualize and act on daily health data — with elegant dashboards and simple workflows for your team and customers.</p>
+          <h1 style={{fontSize:'var(--fs-xxl)',margin:0}}>AQTEV — Health tracking built for teams</h1>
+          <p style={{color:'var(--color-muted)',marginTop:12, maxWidth:680}}>AQTEV is a lightweight health tracking platform that helps professionals collect daily vitals, log meals and weight, and surface actionable insights — all in one elegant dashboard. Integrates with food databases, provides personalized recommendations and supports team workflows.</p>
 
           <div style={{display:'flex',gap:12,marginTop:20}}>
-            <Link to="/signup"><Button>Start free</Button></Link>
-            <Link to="/signin"><Button variant="ghost">Schedule demo</Button></Link>
+            <Link to="/signup"><Button>Get started — free</Button></Link>
+            <Link to="/signin"><Button variant="ghost">View demo</Button></Link>
           </div>
 
-          <section style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:12,marginTop:36}}>
-            <Card><div style={{fontWeight:700}}>1,234</div><div style={{color:'var(--color-muted)'}}>Active users</div></Card>
-            <Card><div style={{fontWeight:700}}>$12k</div><div style={{color:'var(--color-muted)'}}>Monthly revenue</div></Card>
-            <Card><div style={{fontWeight:700}}>85%</div><div style={{color:'var(--color-muted)'}}>Health score</div></Card>
+          <section id="features" style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:12,marginTop:36}}>
+            <Card>
+              <h4 style={{margin:0}}>Daily logging</h4>
+              <p style={{color:'var(--color-muted)',marginTop:8}}>Log water, sleep, steps and meals with quick inputs and food search.</p>
+            </Card>
+
+            <Card>
+              <h4 style={{margin:0}}>Insights & goals</h4>
+              <p style={{color:'var(--color-muted)',marginTop:8}}>Personalized calorie & protein targets, BMI and weekly trends for users and teams.</p>
+            </Card>
+
+            <Card>
+              <h4 style={{margin:0}}>Weight tracking</h4>
+              <p style={{color:'var(--color-muted)',marginTop:8}}>Daily weight entries, history, and weekly summaries with trend analysis.</p>
+            </Card>
+
+            <Card>
+              <h4 style={{margin:0}}>Food database</h4>
+              <p style={{color:'var(--color-muted)',marginTop:8}}>Searchable food catalog with calories and protein per unit — customizable to your menu.</p>
+            </Card>
           </section>
         </section>
 
         <aside className="aside-panel">
           <Card>
-            <h3 style={{marginTop:0}}>Create an account</h3>
-            <p style={{color:'var(--color-muted)'}}>Get started with a 14-day free trial — no credit card required.</p>
+            <h3 style={{marginTop:0}}>Ready to try AQTEV?</h3>
+            <p style={{color:'var(--color-muted)'}}>Create an account and start tracking today. Designed for clinics, coaches and wellness teams.</p>
             <div style={{marginTop:12}}>
               <Link to="/signup"><Button style={{width:'100%'}}>Create account</Button></Link>
             </div>
+
+            <hr style={{margin:'16px 0',border:'none',borderTop:'1px solid rgba(11,31,36,0.04)'}} />
+            <div style={{fontSize:13,color:'var(--color-muted)'}}>
+              Tech: Node.js · MongoDB · Vite · React · Tailwind (utility)
+            </div>
+            <div style={{marginTop:8}}><a href="https://github.com" target="_blank" rel="noreferrer">View on GitHub</a></div>
           </Card>
         </aside>
       </main>

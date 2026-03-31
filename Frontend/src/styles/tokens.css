@@ -4,8 +4,10 @@
   --color-primary-600: #06686A;   /* darker teal */
   --color-secondary: #10B981;     /* fresh emerald */
   --color-accent: #06B6D4;        /* aqua accent for highlights */
-  --color-bg: #F6FBF9;           /* very light greenish background */
-  --color-surface: #FFFFFF;      /* cards / surfaces */
+  --color-bg: #F8FAFC;           /* soft green-gray base */
+  --color-surface: #EAF9F5;      /* soft mint surface for cards */
+  --surface-contrast: #DCF3EE;   /* slightly darker surface for contrast */
+  --color-wealth: #C69A2D;       /* warm gold for wealth accents */
   --color-muted: #64748B;        /* slate-muted text */
   --color-text: #0B1F24;         /* deep near-black with green hint */
   --color-success: #059669;

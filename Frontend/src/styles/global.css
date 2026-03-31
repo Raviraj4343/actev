@@ -6,11 +6,11 @@ html,body,#root{height:100%}
 body{
   margin:0;
   font-family: var(--font-sans);
-  background:var(--color-bg);
   color:var(--color-text);
   -webkit-font-smoothing:antialiased;
   -moz-osx-font-smoothing:grayscale;
   line-height:1.45;
+  background: linear-gradient(180deg, rgba(6,104,96,0.03) 0%, rgba(198,154,45,0.01) 100%), var(--color-bg);
 }
 
 /* Focus / accessibility */
@@ -56,10 +56,12 @@ a:hover{color:var(--color-accent);text-decoration:underline}
 
 .nav{margin-top:8px;display:flex;flex-direction:column;gap:8px}
 .nav-item{padding:10px 12px;border-radius:8px;color:var(--color-muted);text-decoration:none;font-weight:600}
-.nav-item.active{background:rgba(6,104,96,0.06);color:var(--color-primary)}
+.nav-item.active{background:linear-gradient(90deg, rgba(6,104,96,0.06), rgba(198,154,45,0.02));color:var(--color-primary)}
 .sidebar-footer{margin-top:auto;color:var(--color-muted);font-size:13px}
 
 .main-area{margin-left:var(--sidebar-width);flex:1;display:flex;flex-direction:column;min-height:100vh}
+.main-area.no-sidebar{margin-left:0}
+.main-area.no-sidebar .content-area{padding-left:var(--space-md);padding-right:var(--space-md);max-width:1100px;margin:0 auto}
 
 .topbar{height:var(--topbar-height);display:flex;align-items:center;justify-content:space-between;padding:8px 20px;background:rgba(255,255,255,0.6);box-shadow:var(--shadow-sm);border-bottom:1px solid rgba(11,31,36,0.03);position:sticky;top:0;z-index:10;backdrop-filter:blur(6px)}
 .topbar-left{display:flex;align-items:center;gap:12px}
@@ -113,7 +115,7 @@ a:hover{color:var(--color-accent);text-decoration:underline}
 
 .dashboard-grid{display:grid;grid-template-columns:2fr 1fr;gap:16px}
 .activity-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:12px}
-.activity-item{display:flex;justify-content:space-between;align-items:center;padding:8px;border-radius:8px;background:linear-gradient(180deg,rgba(255,255,255,0.6),rgba(255,255,255,0.8));border:1px solid rgba(2,6,23,0.03)}
+.activity-item{display:flex;justify-content:space-between;align-items:center;padding:8px;border-radius:8px;background:var(--surface-contrast);border:1px solid rgba(2,6,23,0.03)}
 .activity-text{font-size:14px}
 .activity-time{font-size:13px}
 
