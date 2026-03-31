@@ -263,14 +263,22 @@ a:hover{color:var(--color-accent);text-decoration:underline}
 
 /* Food search suggestions */
 .food-search .suggestions{margin-top:8px;border-radius:8px;overflow:hidden;border:1px solid rgba(15,23,42,0.04);background:var(--color-surface)}
-.suggestion{padding:10px 12px;border-bottom:1px solid rgba(15,23,42,0.02);cursor:pointer}
+.suggestion{width:100%;padding:10px 12px;border:0;border-bottom:1px solid rgba(15,23,42,0.02);cursor:pointer;background:transparent;text-align:left}
 .suggestion:hover{background:rgba(2,6,23,0.02)}
 .s-name{font-weight:600}
+.suggestion-state{padding:10px 12px}
 
 /* Daily editor */
 .daily-editor .vitals{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
 .daily-editor .meals{margin-top:12px}
-.meal-group{padding:8px;border-radius:8px;border:1px solid rgba(15,23,42,0.03);margin-bottom:8px}
+.daily-editor .field select{width:100%;min-height:54px;padding:0 14px;border-radius:var(--radius);border:1px solid rgba(7,89,133,0.12);background:rgba(255,255,255,0.78);font-size:var(--fs-base);color:var(--color-text);box-shadow:inset 0 1px 0 rgba(255,255,255,0.72),0 8px 22px rgba(11,31,36,0.05)}
+.meal-group{padding:12px;border-radius:14px;border:1px solid rgba(15,23,42,0.06);margin-bottom:10px;background:rgba(255,255,255,0.52)}
+.meal-group-title{margin-bottom:10px;font-weight:700}
+.meal-item-row{display:grid;grid-template-columns:minmax(0,1fr) 84px auto;gap:10px;align-items:center;padding:8px 0}
+.meal-item-copy strong{display:block;font-size:15px;color:var(--color-text)}
+.meal-qty-input{width:100%;min-height:40px;padding:0 10px;border-radius:12px;border:1px solid rgba(7,89,133,0.12);background:rgba(255,255,255,0.86);font:inherit;color:var(--color-text)}
+.meal-remove-btn{min-height:40px;padding:0 12px;border-radius:12px;border:1px solid rgba(15,23,42,0.08);background:rgba(255,255,255,0.7);font:inherit;font-weight:600;color:var(--color-primary);cursor:pointer}
+.meal-remove-btn:hover{background:rgba(255,255,255,0.92)}
 
 
 /* Dashboard */
@@ -479,6 +487,7 @@ a:hover{color:var(--color-accent);text-decoration:underline}
   .feature-orbit{width:200px}
   .feature-orbit strong{font-size:30px}
   .feature-list-row,.feature-browser-row{align-items:flex-start;flex-direction:column}
+  .meal-item-row{grid-template-columns:1fr}
   .auth-page-shell{padding:20px 12px}
   .auth-page-card{padding:20px}
   .auth-page-card h2{font-size:clamp(28px,8vw,36px)}

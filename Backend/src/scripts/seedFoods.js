@@ -1,14 +1,11 @@
 import dotenv from "dotenv";
-configDotenv();
 import mongoose from "mongoose";
-import {DB_NAME} from "../constants.js";
+import Food from "../models/food.model.js";
+import { DB_NAME, MONGODB_URI } from "../constants.js";
 
-dotenv.config({
-  path: path.resolve(__dirname, "../../.env"),
-});
+dotenv.config();
 
 const FOODS = [
-  // ─── Grains / Staples ──────────────────────────────────────
   {
     name: "Roti (Chapati)",
     nameHindi: "रोटी",
@@ -29,7 +26,7 @@ const FOODS = [
   },
   {
     name: "Paratha",
-    nameHindi: "परांठा",
+    nameHindi: "पराठा",
     caloriesPerUnit: 180,
     proteinPerUnit: 3.5,
     unit: "piece",
@@ -72,8 +69,6 @@ const FOODS = [
     category: "grain",
     dietType: "veg",
   },
-
-  // ─── Protein – Vegetarian ──────────────────────────────────
   {
     name: "Dal (Cooked)",
     nameHindi: "दाल",
@@ -128,8 +123,6 @@ const FOODS = [
     category: "protein",
     dietType: "veg",
   },
-
-  // ─── Protein – Non-Vegetarian ──────────────────────────────
   {
     name: "Egg (Boiled)",
     nameHindi: "अंडा",
@@ -157,8 +150,6 @@ const FOODS = [
     category: "protein",
     dietType: "non_veg",
   },
-
-  // ─── Dairy ────────────────────────────────────────────────
   {
     name: "Milk (Full Fat)",
     nameHindi: "दूध",
@@ -186,8 +177,6 @@ const FOODS = [
     category: "dairy",
     dietType: "veg",
   },
-
-  // ─── Vegetables ───────────────────────────────────────────
   {
     name: "Sabzi (Mixed Veg Curry)",
     nameHindi: "सब्जी",
@@ -206,8 +195,6 @@ const FOODS = [
     category: "vegetable",
     dietType: "veg",
   },
-
-  // ─── Fruits ───────────────────────────────────────────────
   {
     name: "Banana",
     nameHindi: "केला",
@@ -226,8 +213,6 @@ const FOODS = [
     category: "fruit",
     dietType: "veg",
   },
-
-  // ─── Snacks ───────────────────────────────────────────────
   {
     name: "Peanuts (Roasted)",
     nameHindi: "मूंगफली",
@@ -250,24 +235,20 @@ const FOODS = [
 
 const seed = async () => {
   try {
-    await mongoose.connect(`${process.env.MONGODB_URI}/${DB_NAME}`);
-    console.log("✅ Connected to MongoDB");
+    await mongoose.connect(`${MONGODB_URI}/${DB_NAME}`);
+    console.log("Connected to MongoDB");
 
     await Food.deleteMany({});
-    console.log("🗑️  Cleared existing food data");
+    console.log("Cleared existing food data");
 
     const inserted = await Food.insertMany(FOODS);
-    console.log(`🌱 Seeded ${inserted.length} food items successfully!\n`);
-
-    inserted.forEach((f) =>
-      console.log(`  ✔ ${f.name} — ${f.caloriesPerUnit} kcal / ${f.proteinPerUnit}g protein per ${f.unit}`)
-    );
+    console.log(`Seeded ${inserted.length} food items successfully.`);
 
     await mongoose.disconnect();
-    console.log("\n✅ Done. MongoDB disconnected.");
+    console.log("MongoDB disconnected.");
     process.exit(0);
   } catch (err) {
-    console.error("❌ Seed failed:", err.message);
+    console.error("Seed failed:", err.message);
     process.exit(1);
   }
 };

@@ -18,14 +18,13 @@ const mealItemSchema = new mongoose.Schema(
   { _id: false }
 );
 
-mealItemSchema.pre("save", function (next) {
+mealItemSchema.pre("save", function () {
   this.totalCalories = parseFloat(
     (this.caloriesPerUnit * this.quantity).toFixed(1)
   );
   this.totalProtein = parseFloat(
     (this.proteinPerUnit * this.quantity).toFixed(1)
   );
-  next();
 });
 
 const mealGroupSchema = new mongoose.Schema(
@@ -83,7 +82,7 @@ dailyLogSchema.index({ userId: 1, date: 1 }, { unique: true });
 /**
  * Recalculate totals before saving
  */
-dailyLogSchema.pre("save", function (next) {
+dailyLogSchema.pre("save", function () {
   let totalCalories = 0;
   let totalProtein = 0;
 
@@ -102,8 +101,6 @@ dailyLogSchema.pre("save", function (next) {
 
   this.totalCalories = Math.round(totalCalories);
   this.totalProtein = parseFloat(totalProtein.toFixed(1));
-
-  next();
 });
 
 const DailyLog = mongoose.model("DailyLog", dailyLogSchema);

@@ -36,9 +36,14 @@ const searchFoods = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Search query is required.");
   }
 
+  const term = q.trim();
+
   const foods = await Food.find({
     isActive: true,
-    name: { $regex: q.trim(), $options: "i" },
+    $or: [
+      { name: { $regex: term, $options: "i" } },
+      { nameHindi: { $regex: term, $options: "i" } },
+    ],
   })
     .limit(10)
     .select("name unit caloriesPerUnit proteinPerUnit category dietType");
