@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import api from '../utils/api'
+import { useAuth } from '../contexts/AuthContext'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
 import '../styles/global.css'
@@ -17,8 +18,7 @@ export default function SignIn(){
     setError(null)
     setLoading(true)
     try{
-      const res = await api.login({ email, password })
-      if(res?.data?.accessToken) api.saveToken(res.data.accessToken)
+      const res = await auth.login({ email, password })
       setLoading(false)
       navigate('/dashboard')
     }catch(err){
@@ -26,6 +26,8 @@ export default function SignIn(){
       setError(err.payload?.message || err.message || 'Sign in failed')
     }
   }
+
+  const auth = useAuth()
 
   return (
     <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',padding:24}}>
