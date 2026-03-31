@@ -6,39 +6,130 @@ import * as api from '../utils/api'
 const formatDate = (date) =>
   date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
 
+const makeDraftId = () => `meal-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
+
+const createDraftItem = (item) => {
+  const quantity = Number(item.quantity) || 1
+  const totalCalories = Number(item.totalCalories) || 0
+  const totalProtein = Number(item.totalProtein) || 0
+
+  return {
+    draftId: item.draftId || makeDraftId(),
+    foodId: item.foodId?._id || item.foodId,
+    foodName: item.foodName || item.foodId?.name || 'Food item',
+    quantity,
+    caloriesPerUnit: item.caloriesPerUnit ?? (quantity ? totalCalories / quantity : 0),
+    proteinPerUnit: item.proteinPerUnit ?? (quantity ? totalProtein / quantity : 0),
+  }
+}
+
+const normalizeMeals = (incomingMeals = []) =>
+  incomingMeals.map((meal) => ({
+    type: meal.type,
+    items: (meal.items || []).map((item) => createDraftItem(item)),
+  }))
+
 export default function DailyLog(){
   const [log, setLog] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [mealType, setMealType] = useState('breakfast')
+  const [draftMeals, setDraftMeals] = useState([])
+  const [draftVitals, setDraftVitals] = useState({ waterIntake: '', sleepHours: '', steps: '' })
 
   useEffect(() => {
     let mounted = true
     api.getTodayLog()
-      .then((response) => { if (mounted) setLog(response?.data || null) })
+      .then((response) => {
+        if (!mounted) return
+        const nextLog = response?.data || null
+        setLog(nextLog)
+        setDraftMeals(normalizeMeals(nextLog?.meals || []))
+        setDraftVitals({
+          waterIntake: nextLog?.waterIntake || '',
+          sleepHours: nextLog?.sleepHours ?? '',
+          steps: nextLog?.steps ?? '',
+        })
+      })
       .catch(() => {})
       .finally(() => { if (mounted) setLoading(false) })
     return () => { mounted = false }
   }, [])
 
+  const handleAddFood = (food, selectedMealType, quantity = 1) => {
+    setDraftMeals((prev) => {
+      const existingIndex = prev.findIndex((meal) => meal.type === selectedMealType)
+      const nextItem = createDraftItem({
+        foodId: food._id,
+        foodName: food.name,
+        quantity,
+        caloriesPerUnit: food.caloriesPerUnit || 0,
+        proteinPerUnit: food.proteinPerUnit || 0,
+      })
+
+      if (existingIndex === -1) {
+        return [...prev, { type: selectedMealType, items: [nextItem] }]
+      }
+
+      return prev.map((meal, index) => (
+        index === existingIndex
+          ? { ...meal, items: [...meal.items, nextItem] }
+          : meal
+      ))
+    })
+  }
+
+  const handleRemoveFood = (type, draftId) => {
+    setDraftMeals((prev) => prev
+      .map((meal) => (
+        meal.type !== type
+          ? meal
+          : { ...meal, items: meal.items.filter((item) => item.draftId !== draftId) }
+      ))
+      .filter((meal) => meal.items.length > 0))
+  }
+
   const handleSave = async (payload) => {
     const response = await api.createOrUpdateDailyLog(payload)
-    setLog(response?.data || null)
+    const nextLog = response?.data || null
+    setLog(nextLog)
+    setDraftMeals(normalizeMeals(nextLog?.meals || []))
+    setDraftVitals({
+      waterIntake: nextLog?.waterIntake || '',
+      sleepHours: nextLog?.sleepHours ?? '',
+      steps: nextLog?.steps ?? '',
+    })
     return response
   }
 
-  const summary = useMemo(() => {
-    const meals = log?.meals || []
-    return [
-      { label: 'Calories', value: log?.totalCalories ?? 0, suffix: 'kcal' },
-      { label: 'Protein', value: log?.totalProtein ?? 0, suffix: 'g' },
-      { label: 'Meals', value: meals.length, suffix: 'logged' },
-      { label: 'Steps', value: log?.steps ?? 0, suffix: 'today' }
-    ]
-  }, [log])
+  const handleVitalsChange = (nextVitals) => {
+    setDraftVitals(nextVitals)
+  }
 
-  const mealTimeline = (log?.meals || []).map((meal) => ({
+  const liveCalories = draftMeals.reduce(
+    (mealSum, meal) => mealSum + meal.items.reduce((itemSum, item) => itemSum + ((item.caloriesPerUnit || 0) * (item.quantity || 1)), 0),
+    0
+  )
+
+  const liveProtein = draftMeals.reduce(
+    (mealSum, meal) => mealSum + meal.items.reduce((itemSum, item) => itemSum + ((item.proteinPerUnit || 0) * (item.quantity || 1)), 0),
+    0
+  )
+
+  const summary = useMemo(() => {
+    const meals = draftMeals || []
+    return [
+      { label: 'Calories', value: Math.round(liveCalories), suffix: 'kcal' },
+      { label: 'Protein', value: Number(liveProtein.toFixed(1)), suffix: 'g' },
+      { label: 'Meals', value: meals.length, suffix: 'logged' },
+      { label: 'Steps', value: draftVitals.steps || 0, suffix: 'today' }
+    ]
+  }, [draftMeals, draftVitals.steps, liveCalories, liveProtein])
+
+  const mealTimeline = draftMeals.map((meal) => ({
     type: meal.type,
+    items: meal.items,
     count: meal.items?.length || 0,
-    calories: meal.items?.reduce((sum, item) => sum + (item.totalCalories || 0), 0) || 0
+    calories: meal.items?.reduce((sum, item) => sum + ((item.caloriesPerUnit || 0) * (item.quantity || 1)), 0) || 0
   }))
 
   return (
@@ -54,7 +145,7 @@ export default function DailyLog(){
         <div className="feature-hero-aside">
           <span className="feature-date-chip">{formatDate(new Date())}</span>
           <div className="feature-orbit feature-orbit-soft">
-            <strong>{loading ? '-' : `${log?.totalCalories ?? 0}`}</strong>
+            <strong>{loading ? '-' : `${Math.round(liveCalories)}`}</strong>
             <span>calories logged</span>
           </div>
         </div>
@@ -78,26 +169,60 @@ export default function DailyLog(){
               <p className="muted">Update today&apos;s meals, water, sleep, and steps in one place.</p>
             </div>
           </div>
-          <DailyLogEditor date={new Date()} log={log} loading={loading} onSave={handleSave} />
+          <DailyLogEditor
+            date={new Date()}
+            log={log}
+            meals={draftMeals}
+            vitals={draftVitals}
+            mealType={mealType}
+            onMealTypeChange={setMealType}
+            onAddFood={handleAddFood}
+            onVitalsChange={handleVitalsChange}
+            loading={loading}
+            onSave={handleSave}
+          />
         </Card>
 
         <Card className="feature-side-panel">
           <div className="feature-panel-head">
             <div>
               <h3>Meal snapshot</h3>
-              <p className="muted">A quick overview of what has been captured so far today.</p>
+              <p className="muted">Review added foods here and remove anything you do not want before saving.</p>
             </div>
           </div>
 
           {mealTimeline.length > 0 ? (
-            <div className="feature-stack-list">
+            <div className="snapshot-scroll">
               {mealTimeline.map((meal) => (
-                <div key={meal.type} className="feature-list-row">
-                  <div>
-                    <strong>{String(meal.type).replace(/\b\w/g, (c) => c.toUpperCase())}</strong>
-                    <span>{meal.count} item{meal.count === 1 ? '' : 's'}</span>
+                <div key={meal.type} className="snapshot-meal-group">
+                  <div className="snapshot-meal-head">
+                    <div>
+                      <strong>{String(meal.type).replace(/\b\w/g, (c) => c.toUpperCase())}</strong>
+                      <span>{meal.count} item{meal.count === 1 ? '' : 's'}</span>
+                    </div>
+                    <div className="feature-list-metric">{meal.calories} kcal</div>
                   </div>
-                  <div className="feature-list-metric">{meal.calories} kcal</div>
+
+                  <div className="snapshot-items">
+                    {meal.items.map((item) => (
+                      <div key={item.draftId} className="snapshot-item">
+                        <div className="snapshot-item-copy">
+                          <strong>{item.foodName}</strong>
+                          <span>Qty {item.quantity} • {Math.round((item.caloriesPerUnit || 0) * item.quantity)} kcal</span>
+                        </div>
+                        <button
+                          type="button"
+                          className="snapshot-remove-btn"
+                          aria-label={`Remove ${item.foodName}`}
+                          onClick={() => handleRemoveFood(meal.type, item.draftId)}
+                        >
+                          <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M9 3h6l1 2h4v2H4V5h4l1-2Zm1 7h2v8h-2v-8Zm4 0h2v8h-2v-8ZM7 10h2v8H7v-8Z" />
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               ))}
             </div>

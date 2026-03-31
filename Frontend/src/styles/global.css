@@ -279,6 +279,24 @@ a:hover{color:var(--color-accent);text-decoration:underline}
 .meal-qty-input{width:100%;min-height:40px;padding:0 10px;border-radius:12px;border:1px solid rgba(7,89,133,0.12);background:rgba(255,255,255,0.86);font:inherit;color:var(--color-text)}
 .meal-remove-btn{min-height:40px;padding:0 12px;border-radius:12px;border:1px solid rgba(15,23,42,0.08);background:rgba(255,255,255,0.7);font:inherit;font-weight:600;color:var(--color-primary);cursor:pointer}
 .meal-remove-btn:hover{background:rgba(255,255,255,0.92)}
+.meal-add-card{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:12px;padding:14px 16px;border-radius:18px;background:rgba(255,255,255,0.66);border:1px solid rgba(255,255,255,0.64)}
+.meal-add-copy strong{display:block;font-size:16px;color:var(--color-text)}
+.meal-add-copy span{display:block;font-size:13px;color:var(--color-muted);margin-top:4px}
+.meal-add-controls{display:flex;align-items:center;gap:10px}
+.meal-add-btn{min-height:40px;padding:0 14px;border-radius:12px;border:0;background:linear-gradient(90deg,#0284c7,#10b981);color:#fff;font:inherit;font-weight:700;cursor:pointer}
+.meal-add-btn:hover{opacity:.96}
+.snapshot-scroll{display:grid;gap:14px;max-height:520px;overflow:auto;padding-right:4px}
+.snapshot-meal-group{padding:16px;border-radius:20px;background:rgba(255,255,255,0.68);border:1px solid rgba(255,255,255,0.64)}
+.snapshot-meal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}
+.snapshot-meal-head strong{display:block;font-size:18px;color:var(--color-text)}
+.snapshot-meal-head span{display:block;font-size:13px;color:var(--color-muted);margin-top:4px}
+.snapshot-items{display:grid;gap:10px}
+.snapshot-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-radius:16px;background:rgba(246,251,252,0.88);border:1px solid rgba(15,23,42,0.05)}
+.snapshot-item-copy strong{display:block;font-size:15px;color:var(--color-text)}
+.snapshot-item-copy span{display:block;font-size:13px;color:var(--color-muted);margin-top:4px}
+.snapshot-remove-btn{width:40px;height:40px;border-radius:12px;border:1px solid rgba(15,23,42,0.08);background:#fff;color:var(--color-primary);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.snapshot-remove-btn svg{width:18px;height:18px;fill:currentColor}
+.snapshot-remove-btn:hover{background:rgba(255,255,255,0.92)}
 
 
 /* Dashboard */
@@ -488,6 +506,7 @@ a:hover{color:var(--color-accent);text-decoration:underline}
   .feature-orbit strong{font-size:30px}
   .feature-list-row,.feature-browser-row{align-items:flex-start;flex-direction:column}
   .meal-item-row{grid-template-columns:1fr}
+  .meal-add-card,.meal-add-controls,.snapshot-item,.snapshot-meal-head{align-items:flex-start;flex-direction:column}
   .auth-page-shell{padding:20px 12px}
   .auth-page-card{padding:20px}
   .auth-page-card h2{font-size:clamp(28px,8vw,36px)}

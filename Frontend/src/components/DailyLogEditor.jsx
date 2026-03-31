@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import Input from './ui/Input'
 import Button from './ui/Button'
 import FoodSearch from './FoodSearch'
@@ -14,85 +14,42 @@ const formatLogDate = (date) => {
   return `${year}-${month}-${day}`
 }
 
-const normalizeMeals = (incomingMeals = []) =>
-  incomingMeals.map((meal) => ({
-    type: meal.type,
-    items: (meal.items || []).map((item) => ({
-      foodId: item.foodId?._id || item.foodId,
-      foodName: item.foodName || item.foodId?.name || 'Food item',
-      quantity: item.quantity || 1,
-    })),
-  }))
-
-export default function DailyLogEditor({ date, log, loading, onSave }){
-  const [water, setWater] = useState(log?.waterIntake || '')
-  const [sleep, setSleep] = useState(log?.sleepHours || '')
-  const [steps, setSteps] = useState(log?.steps || '')
-  const [mealType, setMealType] = useState('breakfast')
-  const [meals, setMeals] = useState(normalizeMeals(log?.meals || []))
+export default function DailyLogEditor({
+  date,
+  log,
+  loading,
+  meals = [],
+  vitals = { waterIntake: '', sleepHours: '', steps: '' },
+  mealType = 'breakfast',
+  onMealTypeChange,
+  onAddFood,
+  onVitalsChange,
+  onSave,
+}){
   const [status, setStatus] = useState('')
   const [saving, setSaving] = useState(false)
+  const [pendingFood, setPendingFood] = useState(null)
+  const [pendingQuantity, setPendingQuantity] = useState('1')
 
   useEffect(() => {
-    setWater(log?.waterIntake || '')
-    setSleep(log?.sleepHours || '')
-    setSteps(log?.steps || '')
-    setMeals(normalizeMeals(log?.meals || []))
     setStatus('')
-  }, [log])
+    setPendingFood(null)
+    setPendingQuantity('1')
+  }, [log, vitals])
 
-  const groupedMeals = useMemo(
-    () => MEAL_OPTIONS.map((type) => ({
-      type,
-      items: meals.find((meal) => meal.type === type)?.items || [],
-    })).filter((meal) => meal.items.length > 0),
-    [meals]
-  )
-
-  const handleAddFood = (food) => {
-    setMeals((prev) => {
-      const existingIndex = prev.findIndex((meal) => meal.type === mealType)
-      const nextItem = {
-        foodId: food._id,
-        foodName: food.name,
-        quantity: 1,
-      }
-
-      if (existingIndex === -1) {
-        return [...prev, { type: mealType, items: [nextItem] }]
-      }
-
-      return prev.map((meal, index) => (
-        index === existingIndex
-          ? { ...meal, items: [...meal.items, nextItem] }
-          : meal
-      ))
-    })
-    setStatus(`${food.name} added to ${mealType}.`)
+  const handleSelectFood = (food) => {
+    setPendingFood(food)
+    setPendingQuantity('1')
+    setStatus('')
   }
 
-  const changeQuantity = (type, foodId, value) => {
-    const quantity = Math.max(1, Number(value) || 1)
-    setMeals((prev) => prev.map((meal) => (
-      meal.type !== type
-        ? meal
-        : {
-            ...meal,
-            items: meal.items.map((item) => (
-              item.foodId !== foodId ? item : { ...item, quantity }
-            )),
-          }
-    )))
-  }
-
-  const removeItem = (type, foodId) => {
-    setMeals((prev) => prev
-      .map((meal) => (
-        meal.type !== type
-          ? meal
-          : { ...meal, items: meal.items.filter((item) => item.foodId !== foodId) }
-      ))
-      .filter((meal) => meal.items.length > 0))
+  const handleAddFood = () => {
+    if (!pendingFood) return
+    const quantity = Math.max(1, Number(pendingQuantity) || 1)
+    if (onAddFood) onAddFood(pendingFood, mealType, quantity)
+    setStatus(`${pendingFood.name} added to ${mealType}.`)
+    setPendingFood(null)
+    setPendingQuantity('1')
   }
 
   const save = async () => {
@@ -100,9 +57,9 @@ export default function DailyLogEditor({ date, log, loading, onSave }){
 
     const payload = {
       date: formatLogDate(date),
-      waterIntake: water || undefined,
-      sleepHours: sleep === '' ? undefined : Number(sleep),
-      steps: steps === '' ? undefined : Number(steps),
+      waterIntake: vitals.waterIntake || undefined,
+      sleepHours: vitals.sleepHours === '' ? undefined : Number(vitals.sleepHours),
+      steps: vitals.steps === '' ? undefined : Number(vitals.steps),
       meals: meals.map((meal) => ({
         type: meal.type,
         items: meal.items.map((item) => ({
@@ -131,8 +88,8 @@ export default function DailyLogEditor({ date, log, loading, onSave }){
       <div className="vitals">
         <div className="field">
           <select
-            value={water}
-            onChange={(e) => setWater(e.target.value)}
+            value={vitals.waterIntake}
+            onChange={(e) => onVitalsChange && onVitalsChange({ ...vitals, waterIntake: e.target.value })}
             aria-label="Water intake"
           >
             <option value="">Water</option>
@@ -142,8 +99,8 @@ export default function DailyLogEditor({ date, log, loading, onSave }){
           </select>
           <div className="field-hint">Choose the closest daily range.</div>
         </div>
-        <Input label="Sleep (hours)" value={sleep} onChange={e => setSleep(e.target.value)} type="number" min="0" max="24" />
-        <Input label="Steps" value={steps} onChange={e => setSteps(e.target.value)} type="number" min="0" />
+        <Input label="Sleep (hours)" value={vitals.sleepHours} onChange={e => onVitalsChange && onVitalsChange({ ...vitals, sleepHours: e.target.value })} type="number" min="0" max="24" />
+        <Input label="Steps" value={vitals.steps} onChange={e => onVitalsChange && onVitalsChange({ ...vitals, steps: e.target.value })} type="number" min="0" />
       </div>
 
       <div className="meals">
@@ -154,51 +111,40 @@ export default function DailyLogEditor({ date, log, loading, onSave }){
               key={type}
               type="button"
               className={`feature-chip ${mealType === type ? 'active' : ''}`}
-              onClick={() => setMealType(type)}
+              onClick={() => onMealTypeChange && onMealTypeChange(type)}
             >
               {type.charAt(0).toUpperCase() + type.slice(1)}
             </button>
           ))}
         </div>
 
-        <FoodSearch onSelect={handleAddFood} placeholder={`Search foods for ${mealType}...`} />
+        <FoodSearch onSelect={handleSelectFood} placeholder={`Search foods for ${mealType}...`} />
 
-        {groupedMeals.length > 0 ? (
-          groupedMeals.map((meal) => (
-            <div key={meal.type} className="meal-group">
-              <div className="muted meal-group-title">
-                {meal.type.charAt(0).toUpperCase() + meal.type.slice(1)}
-              </div>
-              {meal.items.map((item) => (
-                <div key={`${meal.type}-${item.foodId}`} className="meal-item-row">
-                  <div className="meal-item-copy">
-                    <strong>{item.foodName}</strong>
-                  </div>
-                  <input
-                    className="meal-qty-input"
-                    type="number"
-                    min="1"
-                    value={item.quantity}
-                    onChange={(e) => changeQuantity(meal.type, item.foodId, e.target.value)}
-                    aria-label={`Quantity for ${item.foodName}`}
-                  />
-                  <button
-                    type="button"
-                    className="meal-remove-btn"
-                    onClick={() => removeItem(meal.type, item.foodId)}
-                  >
-                    Remove
-                  </button>
-                </div>
-              ))}
+        {pendingFood ? (
+          <div className="meal-add-card">
+            <div className="meal-add-copy">
+              <strong>{pendingFood.name}</strong>
+              <span>{pendingFood.caloriesPerUnit} kcal per {pendingFood.unit}</span>
             </div>
-          ))
-        ) : (
-          <div className="feature-empty compact">
-            <strong>No foods added yet</strong>
-            <p className="muted">Pick a meal type, search for a food, and add it to today&apos;s log.</p>
+            <div className="meal-add-controls">
+              <input
+                className="meal-qty-input"
+                type="number"
+                min="1"
+                value={pendingQuantity}
+                onChange={(e) => setPendingQuantity(e.target.value)}
+                aria-label={`Quantity for ${pendingFood.name}`}
+              />
+              <button
+                type="button"
+                className="meal-add-btn"
+                onClick={handleAddFood}
+              >
+                Add
+              </button>
+            </div>
           </div>
-        )}
+        ) : null}
       </div>
 
       {status ? <div className="feature-inline-note">{status}</div> : null}
