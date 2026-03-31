@@ -1,7 +1,7 @@
 import asyncHandler from "../utils/AsyncHandler.js";
 import ApiError from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
-import DailyLog from "../models/DailyLog.model.js";
+import DailyLog from "../models/dailylog.model.js";
 import Food from "../models/food.model.js";
 import { MEAL_TYPES } from "../constants.js";
 

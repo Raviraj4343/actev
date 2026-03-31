@@ -1,7 +1,7 @@
 import asyncHandler from "../utils/AsyncHandler.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import ApiError from "../utils/ApiError.js";
-import WeightLog from "../models/WeightLog.model.js";
+import WeightLog from "../models/weightlog.model.js";
 import User from "../models/user.model.js";
 
 const getTodayIST = () =>

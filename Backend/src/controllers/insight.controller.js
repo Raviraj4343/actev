@@ -8,7 +8,7 @@ import {
   generateInsights,
   computeHealthReport,
 } from "../utils/HealthCalculation.js";
-import DailyLog from "../models/DailyLog.model.js";
+import DailyLog from "../models/dailylog.model.js";
 
 const getTodayIST = () =>
   new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
