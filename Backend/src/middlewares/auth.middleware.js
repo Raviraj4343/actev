@@ -1,7 +1,7 @@
 import ApiError from "../utils/ApiError.js";
 import asyncHandler from "../utils/AsyncHandler.js";
 import tokenUtils from "../utils/gererateToken.js";
-import User from "../models/User.model.js";
+import User from "../models/user.model.js";
 
 
 const protect = asyncHandler(async (req, _res, next) => {
