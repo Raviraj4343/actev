@@ -9,7 +9,7 @@ import { notFound, errorHandler } from "./middleware/error.middleware.js";
 
 // ── Route imports ──────────────────────────────────────
 import authRoutes from "./routes/auth.route.js";
-
+import userRoutes from "./routes/user.route.js";
 
 
 
@@ -77,6 +77,7 @@ app.get("/health", (_req, res) => {
 const API = "/api/v1";
 
 app.use(`${API}/auth`, authLimiter, authRoutes);
+app.use(`${API}/user`, userRoutes);
 
 
 
