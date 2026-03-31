@@ -163,17 +163,15 @@ export default function Dashboard(){
           <div className="dashboard-panel-header">
             <div>
               <h3>Wellness pulse</h3>
-              <p className="muted">A light graphical read of your current targets.</p>
+              <p className="muted">A quick visual cluster of your core health markers.</p>
             </div>
           </div>
 
-          <div className="dashboard-visual-bars" aria-hidden="true">
-            {visualBars.map((bar) => (
-              <div key={bar.label} className="dashboard-visual-row">
+          <div className="dashboard-star-cluster" aria-hidden="true">
+            {visualBars.map((bar, index) => (
+              <div key={bar.label} className={`dashboard-star-card dashboard-star-${index + 1}`}>
                 <span>{bar.label}</span>
-                <div className="dashboard-visual-track">
-                  <div style={{ width: `${bar.value}%` }} />
-                </div>
+                <strong>{bar.value}%</strong>
               </div>
             ))}
           </div>
