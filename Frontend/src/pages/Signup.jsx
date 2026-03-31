@@ -21,12 +21,13 @@ export default function Signup(){
     if(password !== confirm){ setError('Passwords do not match'); return }
     setLoading(true)
     try{
-      await api.signup({ name, email, password })
+      const res = await api.signup({ name, email, password })
       setLoading(false)
       setError(null)
       // Inform user to verify email
-      navigate('/auth', { state: { message: 'Account created. Please check your email and verify before signing in.' } })
+      navigate('/auth', { state: { message: res?.message || 'Account created. Please check your email and verify before signing in.' } })
     }catch(err){
+      console.error('Signup error', err)
       setError(err.payload?.message || err.message || 'Signup failed')
       setLoading(false)
     }

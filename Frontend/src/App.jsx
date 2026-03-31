@@ -10,6 +10,7 @@ import Signup from './pages/Signup'
 import DesignSystem from './pages/DesignSystem'
 import Forgot from './pages/Forgot'
 import ResetPassword from './pages/ResetPassword'
+import VerifyEmail from './pages/VerifyEmail'
 import DailyLog from './pages/DailyLog'
 import Weight from './pages/Weight'
 import Foods from './pages/Foods'
@@ -37,6 +38,7 @@ export default function App(){
         <Route path="/signup" element={<Signup />} />
         <Route path="/forgot" element={<Forgot />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/daily" element={<DailyLog />} />
         <Route path="/weight" element={<Weight />} />
