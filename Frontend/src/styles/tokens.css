@@ -1,15 +1,15 @@
 :root{
   /* Elegant health-oriented palette */
-  --color-primary: #0B766E;       /* deep teal */
-  --color-primary-600: #06686A;   /* darker teal */
-  --color-secondary: #10B981;     /* fresh emerald */
-  --color-accent: #06B6D4;        /* aqua accent for highlights */
-  --color-bg: #F8FAFC;           /* soft green-gray base */
-  --color-surface: #EAF9F5;      /* soft mint surface for cards */
-  --surface-contrast: #DCF3EE;   /* slightly darker surface for contrast */
+  --color-primary: #01786f;       /* stronger vibrant teal */
+  --color-primary-600: #045f58;   /* darker teal for contrast */
+  --color-secondary: #0fb07a;     /* fresh emerald */
+  --color-accent: #06b6d4;        /* aqua accent for highlights */
+  --color-bg: #DFFCF7;           /* greener mint base (soft, but slightly brighter center) */
+  --color-surface: #FFFFFF;      /* use white surfaces for stronger contrast */
+  --surface-contrast: #F3FBF9;   /* very light mint for subtle panels */
   --color-wealth: #C69A2D;       /* warm gold for wealth accents */
-  --color-muted: #64748B;        /* slate-muted text */
-  --color-text: #0B1F24;         /* deep near-black with green hint */
+  --color-muted: #475E63;        /* slightly deeper muted text */
+  --color-text: #042827;         /* deep near-black with green hint */
   --color-success: #059669;
   --color-danger: #DC2626;
 
