@@ -1,6 +1,7 @@
 import express from "express";
 import { body } from "express-validator";
-import { getProfile, setupProfile, updateProfile, getHealthStats } from "../controllers/user.controller.js";
+import userController from "../controllers/user.controller.js";
+const { getProfile, setupProfile, updateProfile, getHealthStats, uploadAvatar } = userController;
 import { protect, requireEmailVerified } from "../middlewares/auth.middleware.js";
 import validate from "../middlewares/validate.middleware.js";
 
@@ -33,6 +34,7 @@ const profileValidation = [
 router.get("/profile", getProfile);
 router.post("/profile", profileValidation, validate, setupProfile);
 router.put("/profile", updateProfile);
+router.post("/profile/avatar", uploadAvatar);
 router.get("/stats", getHealthStats);
 
 export default router;

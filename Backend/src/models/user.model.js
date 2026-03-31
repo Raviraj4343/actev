@@ -38,6 +38,15 @@ const userSchema = new mongoose.Schema(
       type: String,
       select: false,
     },
+    avatarUrl: {
+      type: String,
+      default: null,
+    },
+    passwordResetToken: {
+      type: String,
+      select: false,
+    },
+    passwordResetExpires: Date,
 
     // ── Profile fields (one-time setup) ──
     profileCompleted: {
