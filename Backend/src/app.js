@@ -44,8 +44,7 @@ app.use(
   })
 );
 
-// Ensure preflight OPTIONS requests are handled
-app.options('*', cors())
+// Note: global CORS middleware above handles preflight requests
 
 // ── Rate limiting ──────────────────────────────────────
 const globalLimiter = rateLimit({

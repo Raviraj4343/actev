@@ -9,6 +9,13 @@ async function request(path, { method = 'GET', body, token, headers = {} } = {})
     },
     credentials: 'include'
   }
+  // If no explicit token provided, try reading a saved access token from localStorage
+  if (!token) {
+    try{
+      const stored = localStorage.getItem('aqtev_access')
+      if (stored) token = stored
+    }catch{}
+  }
   if (body) init.body = JSON.stringify(body)
   if (token) init.headers['Authorization'] = `Bearer ${token}`
 
@@ -42,7 +49,8 @@ export function forgotPassword(email){
 }
 
 export function resetPassword(token, password){
-  return request('/auth/reset-password', { method: 'POST', body: { token, password } })
+  // backend expects `token` and `newPassword` fields
+  return request('/auth/reset-password', { method: 'POST', body: { token, newPassword: password } })
 }
 
 export function login({ email, password }){

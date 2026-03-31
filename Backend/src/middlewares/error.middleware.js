@@ -79,5 +79,4 @@ const notFound = (req, res, _next) => {
     errors: [],
   });
 };
-
-export default { errorHandler, notFound };
+export { errorHandler, notFound };

@@ -56,8 +56,10 @@ export const PORT = process.env.PORT || 3000;
 
 export const COOKIE_OPTIONS = {
   httpOnly: true,
+  // In production, use secure cookies and SameSite=None for cross-site requests.
+  // During local development, allow SameSite=lax so browsers will send cookies from the frontend dev server.
   secure: process.env.NODE_ENV === "production",
-  sameSite: "strict",
+  sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
 };
 
 export default {
