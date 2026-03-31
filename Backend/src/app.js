@@ -13,7 +13,7 @@ import userRoutes from "./routes/user.route.js";
 import foodRoutes from "./routes/food.route.js";
 import dailyLogRoutes from "./routes/dailyLog.route.js";
 import weightLogRoutes from "./routes/weightLog.route.js";
-
+import insightRoutes from "./routes/insight.route.js";
 
 
 const app = express();
@@ -84,7 +84,7 @@ app.use(`${API}/user`, userRoutes);
 app.use(`${API}/food`, foodRoutes);
 app.use(`${API}/daily-log`, dailyLogRoutes);
 app.use(`${API}/weight`, weightLogRoutes);
-
+app.use(`${API}/insight`, insightRoutes);
 
 // ── 404 + error handler ────────────────────────────────
 app.use(notFound);
