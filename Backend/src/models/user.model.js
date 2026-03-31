@@ -42,6 +42,11 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    avatarPublicId: {
+      type: String,
+      default: null,
+      select: false,
+    },
     passwordResetToken: {
       type: String,
       select: false,
@@ -120,6 +125,7 @@ userSchema.methods.toJSON = function () {
   const obj = this.toObject();
   delete obj.password;
   delete obj.refreshToken;
+  delete obj.avatarPublicId;
   return obj;
 };
 

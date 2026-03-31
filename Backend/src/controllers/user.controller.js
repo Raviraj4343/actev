@@ -4,11 +4,7 @@ import ApiResponse from "../utils/ApiResponse.js";
 import asyncHandler from "../utils/AsyncHandler.js";
 import { calculateBMI, calculateDailyCalories, calculateDailyProtein } from "../utils/HealthCalculation.js";
 import multer from "multer";
-import fs from "fs/promises";
-import path from "path";
 import crypto from "crypto";
-
-const AVATAR_DIR = path.join(process.cwd(), "public", "uploads", "avatars");
 
 const avatarUpload = multer({
   storage: multer.memoryStorage(),
@@ -22,17 +18,76 @@ const avatarUpload = multer({
   },
 });
 
-const buildAvatarUrl = (req, filename) =>
-  `${req.protocol}://${req.get("host")}/uploads/avatars/${filename}`;
+const getCloudinaryConfig = () => {
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+  const apiKey = process.env.CLOUDINARY_API_KEY;
+  const apiSecret = process.env.CLOUDINARY_API_SECRET;
 
-const removeOldAvatar = async (avatarUrl) => {
-  if (!avatarUrl || !avatarUrl.includes("/uploads/avatars/")) return;
+  if (!cloudName || !apiKey || !apiSecret) {
+    throw new ApiError(500, "Cloudinary is not configured on the server.");
+  }
 
-  const filename = avatarUrl.split("/uploads/avatars/")[1];
-  if (!filename) return;
+  return { cloudName, apiKey, apiSecret };
+};
 
-  const filePath = path.join(AVATAR_DIR, path.basename(filename));
-  await fs.unlink(filePath).catch(() => {});
+const signCloudinaryParams = (params, apiSecret) => {
+  const payload = Object.entries(params)
+    .filter(([, value]) => value !== undefined && value !== null && value !== "")
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([key, value]) => `${key}=${value}`)
+    .join("&");
+
+  return crypto.createHash("sha1").update(`${payload}${apiSecret}`).digest("hex");
+};
+
+const uploadToCloudinary = async (file, userId) => {
+  const { cloudName, apiKey, apiSecret } = getCloudinaryConfig();
+  const timestamp = Math.floor(Date.now() / 1000);
+  const folder = "aqtev/avatars";
+  const publicId = `user_${userId}_${Date.now()}`;
+  const signature = signCloudinaryParams(
+    { folder, public_id: publicId, timestamp },
+    apiSecret
+  );
+
+  const form = new FormData();
+  form.append("file", new Blob([file.buffer], { type: file.mimetype || "application/octet-stream" }), file.originalname || "avatar.png");
+  form.append("api_key", apiKey);
+  form.append("timestamp", String(timestamp));
+  form.append("folder", folder);
+  form.append("public_id", publicId);
+  form.append("signature", signature);
+
+  const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+    method: "POST",
+    body: form,
+  });
+
+  const payload = await response.json().catch(() => null);
+  if (!response.ok || !payload?.secure_url || !payload?.public_id) {
+    throw new ApiError(502, payload?.error?.message || "Cloudinary upload failed.");
+  }
+
+  return payload;
+};
+
+const removeOldAvatar = async (publicId) => {
+  if (!publicId) return;
+
+  const { cloudName, apiKey, apiSecret } = getCloudinaryConfig();
+  const timestamp = Math.floor(Date.now() / 1000);
+  const signature = signCloudinaryParams({ public_id: publicId, timestamp }, apiSecret);
+
+  const form = new FormData();
+  form.append("public_id", publicId);
+  form.append("api_key", apiKey);
+  form.append("timestamp", String(timestamp));
+  form.append("signature", signature);
+
+  await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/destroy`, {
+    method: "POST",
+    body: form,
+  }).catch(() => {});
 };
 
 const setupProfile = asyncHandler(async (req, res) => {
@@ -143,21 +198,15 @@ const uploadAvatar = [
     if (!req.file) {
       throw new ApiError(400, "Please choose an image to upload.");
     }
-
-    await fs.mkdir(AVATAR_DIR, { recursive: true });
-
-    const ext = path.extname(req.file.originalname || "") || ".png";
-    const filename = `${req.user._id}-${Date.now()}-${crypto.randomBytes(6).toString("hex")}${ext}`;
-    const filePath = path.join(AVATAR_DIR, filename);
-
-    await fs.writeFile(filePath, req.file.buffer);
-
-    const avatarUrl = buildAvatarUrl(req, filename);
-    await removeOldAvatar(req.user.avatarUrl);
+    const uploaded = await uploadToCloudinary(req.file, req.user._id);
+    await removeOldAvatar(req.user.avatarPublicId);
 
     const user = await User.findByIdAndUpdate(
       req.user._id,
-      { avatarUrl },
+      {
+        avatarUrl: uploaded.secure_url,
+        avatarPublicId: uploaded.public_id,
+      },
       { new: true, runValidators: true }
     );
 
