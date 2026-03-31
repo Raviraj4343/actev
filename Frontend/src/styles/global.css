@@ -57,6 +57,27 @@ body{
 .card h3{margin:0 0 8px 0;font-size:14px;color:var(--color-text)}
 .card-body{font-size:18px;color:var(--color-primary)}
 
+.user-info{display:flex;flex-direction:column;gap:8px}
+.user-name{font-weight:700}
+
+/* Profile form */
+.profile-card{max-width:840px}
+.profile-form{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.profile-form .field, .profile-form select{width:100%}
+.field-label{grid-column:span 2;font-size:13px;color:var(--color-muted);margin-top:6px}
+
+/* Food search suggestions */
+.food-search .suggestions{margin-top:8px;border-radius:8px;overflow:hidden;border:1px solid rgba(15,23,42,0.04);background:var(--color-surface)}
+.suggestion{padding:10px 12px;border-bottom:1px solid rgba(15,23,42,0.02);cursor:pointer}
+.suggestion:hover{background:rgba(2,6,23,0.02)}
+.s-name{font-weight:600}
+
+/* Daily editor */
+.daily-editor .vitals{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.daily-editor .meals{margin-top:12px}
+.meal-group{padding:8px;border-radius:8px;border:1px solid rgba(15,23,42,0.03);margin-bottom:8px}
+
+
 /* Dashboard */
 .dashboard-top{display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
 .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:20px}
@@ -81,6 +102,14 @@ body{
   .brand{font-size:14px}
   .nav-item{display:none}
   .main-area{margin-left:72px}
+}
+
+/* Mobile off-canvas behavior */
+@media (max-width:900px){
+  .sidebar{position:fixed;left:0;top:0;bottom:0;width:260px;transform:translateX(0);transition:transform .22s ease;z-index:50}
+  .sidebar.closed{transform:translateX(-116%)}
+  .main-area{margin-left:0}
+  .nav-item{display:block}
 }
 
 @media (max-width:800px){
