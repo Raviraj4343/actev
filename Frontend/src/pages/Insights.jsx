@@ -44,7 +44,7 @@ export default function Insights(){
         <div className="feature-hero-aside">
           <span className="feature-date-chip">{todayInsight?.date || 'Today'}</span>
           <div className="feature-orbit feature-orbit-score">
-            <strong>{loading ? '—' : score ?? '—'}</strong>
+            <strong>{loading ? '-' : score ?? '-'}</strong>
             <span>{typeof score === 'number' ? 'weekly score' : 'waiting for data'}</span>
           </div>
         </div>
@@ -55,7 +55,7 @@ export default function Insights(){
           {todayCards.map((card) => (
             <Card key={card.label} className="feature-stat-card">
               <span className="feature-stat-label">{card.label}</span>
-              <strong className="feature-stat-value">{loading ? '—' : card.value}</strong>
+              <strong className="feature-stat-value">{loading ? '-' : card.value}</strong>
               <span className="feature-stat-note">{card.suffix}</span>
             </Card>
           ))}
@@ -67,7 +67,7 @@ export default function Insights(){
           <div className="feature-panel-head">
             <div>
               <h3>Today&apos;s report</h3>
-              <p className="muted">Generated from `getTodayInsight` with BMI, targets, and log coverage.</p>
+              <p className="muted">A simple view of today&apos;s health markers and logged activity.</p>
             </div>
           </div>
 
@@ -78,7 +78,7 @@ export default function Insights(){
                   <strong>BMI</strong>
                   <span>{todayInsight.bmi?.category || 'Not available'}</span>
                 </div>
-                <div className="feature-list-metric">{todayInsight.bmi?.value ?? '—'}</div>
+                <div className="feature-list-metric">{todayInsight.bmi?.value ?? '-'}</div>
               </div>
               <div className="feature-list-row">
                 <div>
@@ -120,7 +120,7 @@ export default function Insights(){
           <div className="feature-panel-head">
             <div>
               <h3>Weekly summary</h3>
-              <p className="muted">Built directly from the insight summary endpoint.</p>
+              <p className="muted">A quick weekly overview based on your recent logs.</p>
             </div>
           </div>
 
@@ -144,7 +144,7 @@ export default function Insights(){
                 </div>
                 <div className="feature-list-row">
                   <div><strong>Average sleep</strong><span>Logged nights</span></div>
-                  <div className="feature-list-metric">{weeklySummary.averages?.sleep ?? '—'}</div>
+                  <div className="feature-list-metric">{weeklySummary.averages?.sleep ?? '-'}</div>
                 </div>
               </div>
             </>

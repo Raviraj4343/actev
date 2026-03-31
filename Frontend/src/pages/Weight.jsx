@@ -39,9 +39,9 @@ export default function Weight(){
   const latestWeight = history.length ? history[history.length - 1]?.weightKg : null
 
   const summary = useMemo(() => [
-    { label: 'Latest weight', value: latestWeight ?? '—', suffix: latestWeight ? 'kg' : '' },
+    { label: 'Latest weight', value: latestWeight ?? '-', suffix: latestWeight ? 'kg' : '' },
     { label: 'Entries', value: history.length, suffix: '30 days' },
-    { label: 'Weekly change', value: weekly?.weeklyChange ?? '—', suffix: weekly?.weeklyChange || weekly?.weeklyChange === 0 ? 'kg' : '' }
+    { label: 'Weekly change', value: weekly?.weeklyChange ?? '-', suffix: weekly?.weeklyChange || weekly?.weeklyChange === 0 ? 'kg' : '' }
   ], [history.length, latestWeight, weekly])
 
   const handleSubmit = async (e) => {
@@ -81,7 +81,7 @@ export default function Weight(){
         <div className="feature-hero-aside">
           <span className="feature-date-chip">Last 30 days</span>
           <div className="feature-orbit feature-orbit-green">
-            <strong>{loading ? '—' : latestWeight ?? '—'}</strong>
+            <strong>{loading ? '-' : latestWeight ?? '-'}</strong>
             <span>{latestWeight ? 'kg current' : 'no entries yet'}</span>
           </div>
         </div>
@@ -91,7 +91,7 @@ export default function Weight(){
         {summary.map((item) => (
           <Card key={item.label} className="feature-stat-card">
             <span className="feature-stat-label">{item.label}</span>
-            <strong className="feature-stat-value">{loading ? '—' : item.value}</strong>
+            <strong className="feature-stat-value">{loading ? '-' : item.value}</strong>
             <span className="feature-stat-note">{item.suffix}</span>
           </Card>
         ))}
@@ -102,7 +102,7 @@ export default function Weight(){
           <div className="feature-panel-head">
             <div>
               <h3>Trend view</h3>
-              <p className="muted">Built directly from `getWeightHistory` and `getWeeklyWeightSummary`.</p>
+              <p className="muted">Review your recent entries and weekly movement at a glance.</p>
             </div>
           </div>
           <WeightChart data={history} loading={loading} />
@@ -113,7 +113,7 @@ export default function Weight(){
           <div className="feature-panel-head">
             <div>
               <h3>Log today&apos;s weight</h3>
-              <p className="muted">One backend entry per day, updated if you log again.</p>
+              <p className="muted">Add today&apos;s reading and keep your progress up to date.</p>
             </div>
           </div>
 

@@ -35,13 +35,13 @@ export default function Foods(){
           <span className="feature-eyebrow">Foods</span>
           <h1>Search and browse nutrition data</h1>
           <p className="muted">
-            Explore active foods from the backend catalog, narrow by category, and inspect calories and protein quickly.
+            Browse foods by category, search quickly, and check calories and protein without extra clutter.
           </p>
         </div>
         <div className="feature-hero-aside">
           <span className="feature-date-chip">{loading ? 'Loading catalog' : `${foods.length} foods available`}</span>
           <div className="feature-orbit feature-orbit-blue">
-            <strong>{loading ? '—' : categories.length}</strong>
+            <strong>{loading ? '-' : categories.length}</strong>
             <span>categories</span>
           </div>
         </div>
@@ -52,7 +52,7 @@ export default function Foods(){
           <div className="feature-panel-head">
             <div>
               <h3>Search foods</h3>
-              <p className="muted">Powered by `searchFoods` with the same nutrition fields used in daily logs.</p>
+              <p className="muted">Search by food name to preview key nutrition details.</p>
             </div>
           </div>
           <FoodSearch onSelect={(food) => setSelected(food)} />
@@ -74,7 +74,7 @@ export default function Foods(){
                   <div className="feature-list-metric">{selected.category || 'General'}</div>
                 </div>
                 <div className="feature-list-row">
-                  <div><strong>Diet</strong><span>Backend diet type</span></div>
+                  <div><strong>Diet</strong><span>Food preference type</span></div>
                   <div className="feature-list-metric">{selected.dietType || 'Mixed'}</div>
                 </div>
               </div>
@@ -91,7 +91,7 @@ export default function Foods(){
           <div className="feature-panel-head">
             <div>
               <h3>Browse by category</h3>
-              <p className="muted">Built from `getFoodCategories` and `getAllFoods`.</p>
+              <p className="muted">Use categories to narrow the list and find foods faster.</p>
             </div>
           </div>
 

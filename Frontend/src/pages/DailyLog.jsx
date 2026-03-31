@@ -54,7 +54,7 @@ export default function DailyLog(){
         <div className="feature-hero-aside">
           <span className="feature-date-chip">{formatDate(new Date())}</span>
           <div className="feature-orbit feature-orbit-soft">
-            <strong>{loading ? '—' : `${log?.totalCalories ?? 0}`}</strong>
+            <strong>{loading ? '-' : `${log?.totalCalories ?? 0}`}</strong>
             <span>calories logged</span>
           </div>
         </div>
@@ -64,7 +64,7 @@ export default function DailyLog(){
         {summary.map((item) => (
           <Card key={item.label} className="feature-stat-card">
             <span className="feature-stat-label">{item.label}</span>
-            <strong className="feature-stat-value">{loading ? '—' : item.value}</strong>
+            <strong className="feature-stat-value">{loading ? '-' : item.value}</strong>
             <span className="feature-stat-note">{item.suffix}</span>
           </Card>
         ))}
@@ -75,7 +75,7 @@ export default function DailyLog(){
           <div className="feature-panel-head">
             <div>
               <h3>Today&apos;s entry</h3>
-              <p className="muted">Update vitals and add meals using the same backend log record.</p>
+              <p className="muted">Update today&apos;s meals, water, sleep, and steps in one place.</p>
             </div>
           </div>
           <DailyLogEditor date={new Date()} log={log} loading={loading} onSave={handleSave} />
