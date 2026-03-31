@@ -1,9 +1,14 @@
 import asyncHandler from "express-async-handler";
 import ApiError from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
-import { calculateBMI, calculateDailyCalories, calculateDailyProtein } from "../utils/calculations.js";
-import { generateInsights } from "../utils/insights.js";
-import DailyLog from "../models/DailyLog.js";
+import {
+  calculateBMI,
+  calculateDailyCalories,
+  calculateDailyProtein,
+  generateInsights,
+  computeHealthReport,
+} from "../utils/HealthCalculation.js";
+import DailyLog from "../models/DailyLog.model.js";
 
 const getTodayIST = () =>
   new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
@@ -36,19 +41,8 @@ const getTodayInsight = asyncHandler(async (req, res) => {
     steps: null,
   };
 
-  // ── 3. Generate insights ──
-  const { insights, suggestions, warnings } = generateInsights({
-    dailyLog: logData,
-    requiredCalories,
-    requiredProtein,
-    bmiCategory,
-    goal: user.goal,
-    dietPreference: user.dietPreference,
-  });
-
-  // ── 4. Calorie / protein gap ──
-  const calorieDiff = (logData.totalCalories || 0) - requiredCalories;
-  const proteinGap = requiredProtein - (logData.totalProtein || 0);
+  // Use computeHealthReport to generate a consolidated report and recommendations
+  const report = computeHealthReport(user, logData);
 
   const response = {
     date: today,
@@ -74,21 +68,10 @@ const getTodayInsight = asyncHandler(async (req, res) => {
       steps: logData.steps ?? "Not logged",
       logExists: !!dailyLog,
     },
-    gaps: {
-      calories: calorieDiff,
-      calorieStatus:
-        calorieDiff > 200 ? "over" : calorieDiff < -200 ? "under" : "on_track",
-      protein: proteinGap,
-      proteinStatus: proteinGap > 10 ? "low" : proteinGap < -5 ? "excess" : "sufficient",
-    },
-    insights,
-    suggestions,
-    warnings,
+    healthReport: report,
   };
 
-  return res
-    .status(200)
-    .json(new ApiResponse(200, response, "Today's insights generated."));
+  return res.status(200).json(new ApiResponse(200, response, "Today's insights generated."));
 });
 
 
