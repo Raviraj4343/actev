@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import Input from './ui/Input'
 import Button from './ui/Button'
 import FoodSearch from './FoodSearch'
@@ -8,6 +8,13 @@ export default function DailyLogEditor({ date, log, loading, onSave }){
   const [sleep, setSleep] = useState(log?.sleepHours || '')
   const [steps, setSteps] = useState(log?.steps || '')
   const [meals, setMeals] = useState(log?.meals || [])
+
+  useEffect(() => {
+    setWater(log?.waterIntake || '')
+    setSleep(log?.sleepHours || '')
+    setSteps(log?.steps || '')
+    setMeals(log?.meals || [])
+  }, [log])
 
   const handleAddFood = (food) => {
     const group = { type: 'breakfast', items: [{ foodId: food._id, quantity: 1 }] }
@@ -24,7 +31,7 @@ export default function DailyLogEditor({ date, log, loading, onSave }){
   return (
     <div className="daily-editor">
       <div className="vitals">
-        <Input label="Water" value={water} onChange={e=>setWater(e.target.value)} placeholder="e.g. 1-2L" />
+        <Input label="Water" value={water} onChange={e=>setWater(e.target.value)} hint="e.g. 1-2L" />
         <Input label="Sleep (hours)" value={sleep} onChange={e=>setSleep(e.target.value)} type="number" />
         <Input label="Steps" value={steps} onChange={e=>setSteps(e.target.value)} type="number" />
       </div>
