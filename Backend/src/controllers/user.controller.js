@@ -1,7 +1,7 @@
 import User from "../models/user.model.js";
 import ApiError from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
-import asyncHandler from "express-async-handler";
+import asyncHandler from "../utils/AsyncHandler.js";
 import { calculateBMI, calculateDailyCalories, calculateDailyProtein } from "../utils/healthUtils.js";
 // (duplicates removed)
 import multer from "multer";

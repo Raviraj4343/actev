@@ -1,5 +1,5 @@
 import Food from "../models/food.model.js";
-import asyncHandler from "express-async-handler";
+import asyncHandler from "../utils/AsyncHandler.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import ApiError from "../utils/ApiError.js";
 
