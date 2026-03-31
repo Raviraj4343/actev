@@ -11,6 +11,7 @@ import { notFound, errorHandler } from "./middleware/error.middleware.js";
 import authRoutes from "./routes/auth.route.js";
 import userRoutes from "./routes/user.route.js";
 import foodRoutes from "./routes/food.route.js";
+import dailyLogRoutes from "./routes/dailyLog.route.js";
 
 
 
@@ -80,7 +81,7 @@ const API = "/api/v1";
 app.use(`${API}/auth`, authLimiter, authRoutes);
 app.use(`${API}/user`, userRoutes);
 app.use(`${API}/food`, foodRoutes);
-
+app.use(`${API}/daily-log`, dailyLogRoutes);
 
 
 
