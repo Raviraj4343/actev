@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react'
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
 import Layout from './components/Layout'
+import { useAuth } from './contexts/AuthContext'
 import Dashboard from './pages/Dashboard'
 import Profile from './pages/Profile'
 import Auth from './pages/Auth'
@@ -15,6 +16,13 @@ import DailyLog from './pages/DailyLog'
 import Weight from './pages/Weight'
 import Foods from './pages/Foods'
 import Insights from './pages/Insights'
+
+function RequireAuth({ children }) {
+  const { user, loading } = useAuth()
+  if (loading) return null
+  if (!user) return <Navigate to="/" replace />
+  return children
+}
 
 export default function App(){
   const navigate = useNavigate()
@@ -39,12 +47,12 @@ export default function App(){
         <Route path="/forgot" element={<Forgot />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/daily" element={<DailyLog />} />
-        <Route path="/weight" element={<Weight />} />
-        <Route path="/foods" element={<Foods />} />
-        <Route path="/insights" element={<Insights />} />
-        <Route path="/profile" element={<Profile />} />
+        <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
+        <Route path="/daily" element={<RequireAuth><DailyLog /></RequireAuth>} />
+        <Route path="/weight" element={<RequireAuth><Weight /></RequireAuth>} />
+        <Route path="/foods" element={<RequireAuth><Foods /></RequireAuth>} />
+        <Route path="/insights" element={<RequireAuth><Insights /></RequireAuth>} />
+        <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
         <Route path="/auth" element={<Auth />} />
         <Route path="/design" element={<DesignSystem />} />
       </Routes>

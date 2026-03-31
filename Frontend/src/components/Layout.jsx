@@ -16,6 +16,7 @@ export default function Layout({ children }){
       {(showSidebar || sidebarOpen) && (
         <Sidebar isOpen={sidebarOpen} onClose={()=>setSidebarOpen(false)} />
       )}
+      {sidebarOpen && <div className="drawer-backdrop" onClick={()=>setSidebarOpen(false)} aria-hidden="true" />}
       <div className={`main-area ${showSidebar ? 'has-sidebar' : 'no-sidebar'}`}>
         <Navbar onToggleSidebar={()=>setSidebarOpen(s=>!s)} />
         <main className="content-area" onClick={()=> sidebarOpen && setSidebarOpen(false)}>

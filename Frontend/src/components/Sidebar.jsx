@@ -1,6 +1,6 @@
 import React from 'react'
 import Brand from './Brand'
-import { NavLink } from 'react-router-dom'
+import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 
 const baseItems = [
@@ -17,12 +17,13 @@ const authItems = [
 
 export default function Sidebar({ isOpen = false, onClose }){
   const { user, logout } = useAuth() || {}
+  const navigate = useNavigate()
 
   const cls = ['sidebar']
   if (!isOpen) cls.push('closed')
 
   return (
-    <aside className={cls.join(' ')} aria-hidden={!isOpen && window.innerWidth < 900}>
+    <aside className={cls.join(' ')} aria-hidden={!isOpen}>
       <div className="brand"><Brand to="/" /></div>
       <nav className="nav">
         {baseItems.map(item => (
@@ -42,7 +43,16 @@ export default function Sidebar({ isOpen = false, onClose }){
         {user ? (
           <div className="user-info">
             <div className="user-name">{user.name}</div>
-            <button className="btn-ghost" onClick={async()=>{ await logout() }}>Sign out</button>
+            <button
+              className="btn-ghost"
+              onClick={async()=>{
+                await logout()
+                onClose && onClose()
+                navigate('/')
+              }}
+            >
+              Sign out
+            </button>
           </div>
         ) : (
           <div className="muted">v0.1</div>
