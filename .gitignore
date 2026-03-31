@@ -4,6 +4,10 @@ Frontend/node_modules/
 Frontend/dist/
 Frontend/.vite/
 
+node_modules
+dist
+.env
+
 # Ignore backend env (backend already has its own .gitignore)
 Backend/.env
 
