@@ -8,9 +8,17 @@ export const connectDB = async () => {
     console.log("MongoDB already connected");
     return;
   }
-
   try {
-    const uri = `${MONGODB_URI.replace(/\/$/, "")}/${DB_NAME}`;
+    const baseUri = process.env.MONGODB_URL || MONGODB_URI || "mongodb://127.0.0.1:27017";
+    let uri = baseUri.replace(/\/$/, "");
+
+    // If the URI does not already include a database path, append DB_NAME
+    const parts = uri.split("/");
+    if (parts.length === 3) {
+      uri = `${uri}/${DB_NAME}`;
+    }
+
+    // mongoose 6+ enables the new parser/unified topology by default
     const connectionInstance = await mongoose.connect(uri);
 
     isConnected = true;
