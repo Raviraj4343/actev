@@ -20,6 +20,9 @@ import insightRoutes from "./routes/insight.route.js";
 
 const app = express();
 
+// Trust reverse proxy headers on hosted platforms (Render, Vercel, etc.).
+app.set("trust proxy", 1);
+
 const normalizeOrigin = (value = "") => value.trim().replace(/\/$/, "");
 
 const configuredOrigins = new Set(

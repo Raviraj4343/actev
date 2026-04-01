@@ -12,6 +12,7 @@ Required environment variables (set these in `Backend/.env` or your deployment e
 - `SENDER_EMAIL` — a verified sender email configured in your Brevo account
 - `SENDER_NAME` — display name for the sender (optional)
 - `CLIENT_URL` — frontend URL used in email links (e.g. `http://localhost:3000`)
+- `CORS_ORIGIN` — comma-separated list of allowed browser origins in production (e.g. `https://aqtev.vercel.app,https://your-preview.vercel.app`)
 
 Important notes
 ---------------
@@ -44,3 +45,11 @@ curl -X POST 'http://localhost:8000/api/v1/auth/resend-verification' \
 ```
 
 If Brevo returns an error (401/403/422) the server logs will show the provider error — ensure the API key and sender email are valid in your Brevo dashboard.
+
+Production networking notes
+---------------------------
+
+- Use an HTTPS backend URL for production and APK/mobile builds.
+- Keep `NODE_ENV=production` in hosted environments so secure cookie/CORS behavior is applied.
+- Requests with no `Origin` header (mobile/native/curl) are allowed by backend CORS logic.
+- The backend trusts reverse proxy headers for hosted deployments (`trust proxy` enabled).

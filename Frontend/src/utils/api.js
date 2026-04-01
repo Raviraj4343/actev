@@ -1,5 +1,54 @@
-const isLocalHost = typeof window !== 'undefined' && ['localhost', '127.0.0.1'].includes(window.location.hostname)
-const API_BASE = import.meta.env.VITE_API_BASE || (isLocalHost ? 'http://localhost:8000/api/v1' : '')
+const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '::1'])
+const IPV4_PATTERN = /^(?:\d{1,3}\.){3}\d{1,3}$/
+const DEFAULT_DEV_API_BASE = 'http://localhost:8000/api/v1'
+const DEFAULT_PROD_API_BASE = 'https://aqtev.onrender.com/api/v1'
+
+const isNativeRuntime = () => {
+  if (typeof window === 'undefined') return false
+  try {
+    return typeof window.Capacitor !== 'undefined'
+  } catch {
+    return false
+  }
+}
+
+const normalizeApiBase = (value) => {
+  if (!value) return ''
+  const raw = String(value).trim().replace(/\/+$/, '')
+  if (!raw) return ''
+
+  try {
+    const url = new URL(raw)
+    const pathname = url.pathname.replace(/\/+$/, '')
+    const normalizedPath = pathname && pathname !== '/' ? pathname : '/api/v1'
+    url.pathname = normalizedPath.endsWith('/api/v1') ? normalizedPath : `${normalizedPath}/api/v1`
+    return url.toString().replace(/\/+$/, '')
+  } catch {
+    return raw
+  }
+}
+
+const resolveApiBase = () => {
+  const explicit = normalizeApiBase(import.meta.env.VITE_API_BASE)
+  if (explicit) return explicit
+
+  const devBase = normalizeApiBase(import.meta.env.VITE_API_BASE_DEV)
+  const prodBase = normalizeApiBase(import.meta.env.VITE_API_BASE_PROD)
+
+  if (isNativeRuntime()) {
+    return prodBase || normalizeApiBase(DEFAULT_PROD_API_BASE)
+  }
+
+  if (typeof window !== 'undefined') {
+    const host = window.location.hostname
+    const isLocalHost = LOCAL_HOSTS.has(host) || IPV4_PATTERN.test(host)
+    if (isLocalHost) return devBase || normalizeApiBase(DEFAULT_DEV_API_BASE)
+  }
+
+  return prodBase || normalizeApiBase(DEFAULT_PROD_API_BASE)
+}
+
+const API_BASE = resolveApiBase()
 const REQUEST_TIMEOUT_MS = 15000
 const MEMO_TTL_MS = 2 * 60 * 1000
 const memoCache = new Map()
@@ -29,7 +78,7 @@ const getApiOrigin = () => {
 function getApiBase(){
   if (API_BASE) return API_BASE
 
-  throw new Error('Frontend API is not configured. Set VITE_API_BASE in your Vercel project environment variables.')
+  throw new Error('Frontend API is not configured. Set VITE_API_BASE, or VITE_API_BASE_DEV + VITE_API_BASE_PROD.')
 }
 
 export function resolveMediaUrl(value){
@@ -70,6 +119,16 @@ export function normalizeUser(user){
 
 async function request(path, { method = 'GET', body, token, headers = {} } = {}){
   const apiBase = getApiBase()
+
+  if (
+    typeof window !== 'undefined' &&
+    !isNativeRuntime() &&
+    window.location.protocol === 'https:' &&
+    /^http:\/\//i.test(apiBase)
+  ) {
+    throw new Error('Blocked insecure API URL over HTTP from an HTTPS page. Use an HTTPS API URL in production.')
+  }
+
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
   const init = {
