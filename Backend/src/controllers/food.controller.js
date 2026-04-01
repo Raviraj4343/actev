@@ -46,7 +46,9 @@ const searchFoods = asyncHandler(async (req, res) => {
     ],
   })
     .limit(10)
-    .select("name unit caloriesPerUnit proteinPerUnit category dietType");
+    .select(
+      "name nameHindi unit caloriesPerUnit proteinPerUnit carbsPerUnit fatsPerUnit fiberPerUnit calciumPerUnit vitamins category dietType"
+    );
 
   return res
     .status(200)

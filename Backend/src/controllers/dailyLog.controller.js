@@ -40,8 +40,16 @@ const enrichMeals = async (meals) => {
         quantity: item.quantity,
         caloriesPerUnit: food.caloriesPerUnit,
         proteinPerUnit: food.proteinPerUnit,
+        carbsPerUnit: food.carbsPerUnit || 0,
+        fatsPerUnit: food.fatsPerUnit || 0,
+        fiberPerUnit: food.fiberPerUnit || 0,
+        calciumPerUnit: food.calciumPerUnit || 0,
         totalCalories: parseFloat((food.caloriesPerUnit * item.quantity).toFixed(1)),
         totalProtein: parseFloat((food.proteinPerUnit * item.quantity).toFixed(1)),
+        totalCarbs: parseFloat(((food.carbsPerUnit || 0) * item.quantity).toFixed(1)),
+        totalFats: parseFloat(((food.fatsPerUnit || 0) * item.quantity).toFixed(1)),
+        totalFiber: parseFloat(((food.fiberPerUnit || 0) * item.quantity).toFixed(1)),
+        totalCalcium: parseFloat(((food.calciumPerUnit || 0) * item.quantity).toFixed(1)),
       });
     }
 
@@ -111,8 +119,16 @@ const updateMealSection = asyncHandler(async (req, res) => {
       quantity: item.quantity,
       caloriesPerUnit: food.caloriesPerUnit,
       proteinPerUnit: food.proteinPerUnit,
+      carbsPerUnit: food.carbsPerUnit || 0,
+      fatsPerUnit: food.fatsPerUnit || 0,
+      fiberPerUnit: food.fiberPerUnit || 0,
+      calciumPerUnit: food.calciumPerUnit || 0,
       totalCalories: parseFloat((food.caloriesPerUnit * item.quantity).toFixed(1)),
       totalProtein: parseFloat((food.proteinPerUnit * item.quantity).toFixed(1)),
+      totalCarbs: parseFloat(((food.carbsPerUnit || 0) * item.quantity).toFixed(1)),
+      totalFats: parseFloat(((food.fatsPerUnit || 0) * item.quantity).toFixed(1)),
+      totalFiber: parseFloat(((food.fiberPerUnit || 0) * item.quantity).toFixed(1)),
+      totalCalcium: parseFloat(((food.calciumPerUnit || 0) * item.quantity).toFixed(1)),
     });
   }
 
@@ -155,7 +171,7 @@ const updateVitals = asyncHandler(async (req, res) => {
 const getTodayLog = asyncHandler(async (req, res) => {
   const today = getTodayIST();
   const log = await DailyLog.findOne({ userId: req.user._id, date: today })
-    .populate("meals.items.foodId", "name unit category");
+    .populate("meals.items.foodId", "name nameHindi unit category caloriesPerUnit proteinPerUnit carbsPerUnit fatsPerUnit fiberPerUnit calciumPerUnit vitamins");
 
   return res.status(200).json(
     new ApiResponse(200, log || null, log ? "Today's log fetched." : "No log found for today.")
@@ -171,7 +187,7 @@ const getLogByDate = asyncHandler(async (req, res) => {
   }
 
   const log = await DailyLog.findOne({ userId: req.user._id, date })
-    .populate("meals.items.foodId", "name unit category");
+    .populate("meals.items.foodId", "name nameHindi unit category caloriesPerUnit proteinPerUnit carbsPerUnit fatsPerUnit fiberPerUnit calciumPerUnit vitamins");
 
   if (!log) throw new ApiError(404, `No log found for ${date}.`);
 
