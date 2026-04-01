@@ -23,7 +23,8 @@ export function AuthProvider({ children }){
     const res = await api.login(payload)
     // Save access token (backend also sets cookies). This helps dev when cookies are blocked for cross-origin.
     try{ if (res?.data?.accessToken) api.saveToken(res.data.accessToken) }catch(e){}
-    await load()
+    // Avoid an extra blocking round trip after login; use returned user immediately.
+    setUser(api.normalizeUser(res?.data?.user || null))
     return res
   }
 

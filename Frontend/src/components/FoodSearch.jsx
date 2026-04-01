@@ -5,8 +5,27 @@ import * as api from '../utils/api'
 export default function FoodSearch({ onSelect, placeholder = 'Search foods...' }){
   const [q, setQ] = useState('')
   const [results, setResults] = useState([])
+  const [allFoods, setAllFoods] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    let active = true
+
+    api.getAllFoods()
+      .then((res) => {
+        if (!active) return
+        setAllFoods(Array.isArray(res?.data) ? res.data : [])
+      })
+      .catch(() => {
+        if (!active) return
+        setAllFoods([])
+      })
+
+    return () => {
+      active = false
+    }
+  }, [])
 
   useEffect(() => {
     if (!q || q.trim().length < 1) {
@@ -19,24 +38,54 @@ export default function FoodSearch({ onSelect, placeholder = 'Search foods...' }
     const t = setTimeout(async () => {
       setLoading(true)
       setError('')
+
+      const term = q.trim().toLowerCase()
+      const localMatches = allFoods
+        .filter((food) => {
+          const en = (food?.name || '').toLowerCase()
+          const hi = (food?.nameHindi || '').toLowerCase()
+          return en.includes(term) || hi.includes(term)
+        })
+        .slice(0, 10)
+
+      if (active && localMatches.length) {
+        setResults(localMatches)
+      }
+
       try {
         const res = await api.searchFoods(q.trim())
         if (!active) return
-        setResults(res?.data || [])
+        const remote = Array.isArray(res?.data) ? res.data : []
+
+        // Merge local and remote results while preserving uniqueness by _id or name.
+        const merged = []
+        const seen = new Set()
+
+        for (const item of [...remote, ...localMatches]) {
+          const key = item?._id || item?.name
+          if (!key || seen.has(key)) continue
+          seen.add(key)
+          merged.push(item)
+          if (merged.length >= 10) break
+        }
+
+        setResults(merged)
       } catch (err) {
         if (!active) return
-        setResults([])
-        setError(err?.payload?.message || err?.message || 'Unable to search foods.')
+        setResults(localMatches)
+        if (!localMatches.length) {
+          setError(err?.payload?.message || err?.message || 'Unable to search foods.')
+        }
       } finally {
         if (active) setLoading(false)
       }
-    }, 300)
+    }, 200)
 
     return () => {
       active = false
       clearTimeout(t)
     }
-  }, [q])
+  }, [q, allFoods])
 
   const handleSelect = (food) => {
     if (onSelect) onSelect(food)
