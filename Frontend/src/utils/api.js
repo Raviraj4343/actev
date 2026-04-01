@@ -1,12 +1,13 @@
+import { Capacitor } from '@capacitor/core'
+
 const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '::1'])
 const IPV4_PATTERN = /^(?:\d{1,3}\.){3}\d{1,3}$/
 const DEFAULT_DEV_API_BASE = 'http://localhost:8000/api/v1'
 const DEFAULT_PROD_API_BASE = 'https://aqtev.onrender.com/api/v1'
 
 const isNativeRuntime = () => {
-  if (typeof window === 'undefined') return false
   try {
-    return typeof window.Capacitor !== 'undefined'
+    return Capacitor.isNativePlatform()
   } catch {
     return false
   }

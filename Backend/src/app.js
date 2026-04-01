@@ -33,6 +33,10 @@ const configuredOrigins = new Set(
 );
 
 [
+  "http://localhost",
+  "https://localhost",
+  "capacitor://localhost",
+  "ionic://localhost",
   "http://localhost:3000",
   "http://localhost:5173",
   "http://127.0.0.1:3000",
