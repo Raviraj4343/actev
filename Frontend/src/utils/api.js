@@ -308,39 +308,97 @@ export function getGuideActionPlan(payload = {}){
 
 export function getGuideLiveSuggestion(payload = {}){
   const body = payload || {}
-  const shouldFallbackToPlan = (status) => [404, 429, 502, 503, 504].includes(Number(status))
+  const shouldFallback = (status) => [404, 429, 502, 503, 504].includes(Number(status))
+  const latestPrompt = String(body?.prompt || '').trim()
+  const knownGoal = body?.goal ? String(body.goal).replace(/_/g, ' ') : ''
+  const knownDiet = body?.dietPreference ? String(body.dietPreference).replace(/_/g, '-') : ''
+  const knownActivity = body?.activityLevel ? String(body.activityLevel).replace(/_/g, ' ') : ''
+  const knownWeight = Number.isFinite(Number(body?.weightKg)) ? `${Number(body.weightKg)} kg` : ''
+  const historyText = Array.isArray(body?.history)
+    ? body.history
+        .slice(-8)
+        .map((item) => `${item?.role === 'assistant' ? 'Coach' : 'User'}: ${String(item?.content || '').trim()}`)
+        .filter(Boolean)
+        .join(' | ')
+    : ''
 
-  const toReplyText = (plan = {}) => {
-    const actionPlan = Array.isArray(plan?.actionPlan) ? plan.actionPlan : []
-    const riskFlags = Array.isArray(plan?.riskFlags) ? plan.riskFlags : []
-    const nutritionFocus = Array.isArray(plan?.nutritionFocus) ? plan.nutritionFocus : []
-    const trainingFocus = Array.isArray(plan?.trainingFocus) ? plan.trainingFocus : []
-    const recoveryFocus = Array.isArray(plan?.recoveryFocus) ? plan.recoveryFocus : []
+  const buildConversationalFallback = (reason = 'conversation-fallback') => {
+    const pick = (list = []) => list[Math.floor(Math.random() * list.length)] || ''
+    const concisePrompt = latestPrompt || 'Can you guide me based on today?'
+    const knownProfileLine = [knownGoal ? `goal: ${knownGoal}` : '', knownDiet ? `diet: ${knownDiet}` : '', knownActivity ? `activity: ${knownActivity}` : '', knownWeight ? `weight: ${knownWeight}` : '']
+      .filter(Boolean)
+      .join(', ')
 
-    const lines = []
-    if (actionPlan.length) {
-      lines.push('Action plan:')
-      actionPlan.slice(0, 3).forEach((item) => lines.push(`- ${String(item)}`))
+    const promptLower = concisePrompt.toLowerCase()
+    const budgetMatch = promptLower.match(/(?:rs\.?|inr)?\s*(\d{2,5})/i)
+    const budget = budgetMatch ? Number(budgetMatch[1]) : null
+    const wantsProtein = /protein|high protein|muscle|gain|lean/.test(promptLower)
+    const wantsWeightLoss = /fat loss|weight loss|lose weight|cut/.test(promptLower)
+    const wantsMeal = /meal|breakfast|lunch|dinner|snack|food|eat/.test(promptLower)
+
+    let coreReply = pick([
+      'Try a balanced plate: 1 protein source, 1 fiber-rich carb, and vegetables.',
+      'Keep it simple: protein first, then smart carbs, then veggies for volume.',
+      'A good default: high-protein base + moderate carbs + plenty of vegetables.'
+    ])
+    if (wantsProtein && budget && budget <= 80) {
+      coreReply = pick([
+        'Best budget protein picks: eggs, roasted chana, curd, milk, and paneer in small portions.',
+        'For low budget protein, go with eggs, chana, curd, milk, or small paneer servings.',
+        'Cheap high-protein options: eggs, curd, roasted chana, milk, and paneer.'
+      ])
+    } else if (wantsProtein) {
+      coreReply = pick([
+        'Focus on protein anchors each meal: eggs/paneer/tofu/chicken with dal or curd.',
+        'Build each meal around protein: eggs, paneer, tofu, chicken, dal, or curd.',
+        'Prioritize protein at every meal: egg/paneer/tofu/chicken plus dal/curd.'
+      ])
+    } else if (wantsWeightLoss) {
+      coreReply = pick([
+        'For fat loss, keep meals light-volume and protein-forward; avoid liquid calories and fried snacks.',
+        'For weight loss, cut liquid calories and fried items, and keep protein high.',
+        'Fat-loss rule: protein-heavy meals, controlled portions, minimal sugary/fried extras.'
+      ])
+    } else if (wantsMeal) {
+      coreReply = pick([
+        'Use a simple meal rule: half veggies, quarter protein, quarter carbs.',
+        'Easy plate method: 50% veggies, 25% protein, 25% carbs.',
+        'Keep meals balanced with veggie-heavy plates plus a clear protein source.'
+      ])
     }
-    if (nutritionFocus[0]) lines.push(`Nutrition focus: ${String(nutritionFocus[0])}`)
-    if (trainingFocus[0]) lines.push(`Training focus: ${String(trainingFocus[0])}`)
-    if (recoveryFocus[0]) lines.push(`Recovery focus: ${String(recoveryFocus[0])}`)
-    if (riskFlags[0]) lines.push(`Risk flag: ${String(riskFlags[0])}`)
-    return lines.join('\n').trim()
-  }
 
-  const buildActionPlanFallback = async (reason = 'fallback') => {
-    const fallbackRes = await request('/insight/action-plan', {
-      method: 'POST',
-      body: {
-        goal: body?.goal
-      }
-    })
+    const optionLine = budget
+      ? pick([
+          `Within Rs ${budget}, choose one: 2 eggs + banana, curd + roasted chana, or paneer + cucumber.`,
+          `Budget Rs ${budget} ideas: egg + banana, curd + chana, or paneer + salad.`,
+          `Under Rs ${budget}: eggs, curd-chana combo, or paneer with cucumber works well.`
+        ])
+      : pick([
+          'Quick options: egg/paneer/tofu bowl, dal-chawal with salad, or curd-chana snack.',
+          'Simple picks: dal + rice + salad, protein bowl, or curd with roasted chana.',
+          'Try one now: protein bowl, dal meal, or curd-chana snack.'
+        ])
+
+    const reply = [
+      coreReply,
+      optionLine,
+      knownProfileLine
+        ? pick([
+            `Using your profile context (${knownProfileLine}).`,
+            `Personalized with your profile (${knownProfileLine}).`,
+            `Tailored from your saved profile (${knownProfileLine}).`
+          ])
+        : pick([
+            'I can personalize more once profile details are set.',
+            'Add profile details for sharper recommendations.',
+            'Set profile data to get even more precise suggestions.'
+          ])
+    ].join('\n')
 
     return {
       success: true,
       data: {
-        reply: toReplyText(fallbackRes?.data?.plan || {}),
+        reply,
         source: reason
       }
     }
@@ -348,19 +406,19 @@ export function getGuideLiveSuggestion(payload = {}){
 
   return request('/insight/live-suggestion', { method: 'POST', body })
     .catch(async (err) => {
-      if (!shouldFallbackToPlan(err?.status)) throw err
+      if (!shouldFallback(err?.status)) throw err
 
       // Backward compatibility: some deployed backends may still use camelCase route.
       if (Number(err?.status) === 404) {
         try {
           return await request('/insight/liveSuggestion', { method: 'POST', body })
         } catch (legacyErr) {
-          if (!shouldFallbackToPlan(legacyErr?.status)) throw legacyErr
+          if (!shouldFallback(legacyErr?.status)) throw legacyErr
         }
       }
 
-      // Last-resort compatibility: convert action-plan payload into chat-like reply text.
-      return buildActionPlanFallback('action-plan-fallback')
+      // Last-resort compatibility: keep chat conversational, not rigid action-plan output.
+      return buildConversationalFallback('conversation-fallback')
     })
 }
 

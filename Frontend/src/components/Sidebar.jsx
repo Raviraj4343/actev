@@ -5,6 +5,8 @@ import { useAuth } from '../contexts/AuthContext'
 import ConfirmationModal from './ConfirmationModal'
 import * as api from '../utils/api'
 
+const SHOW_LIVE_SUGGESTION_UI = false
+
 const baseItems = [
   {
     to: '/dashboard',
@@ -131,7 +133,14 @@ export default function Sidebar({ isOpen = false, onClose }){
     setLiveError('')
 
     try {
-      const res = await api.getGuideLiveSuggestion({ prompt, goal: user?.goal, history })
+      const res = await api.getGuideLiveSuggestion({
+        prompt,
+        goal: user?.goal,
+        dietPreference: user?.dietPreference,
+        activityLevel: user?.activityLevel,
+        weightKg: user?.weightKg,
+        history
+      })
       const reply = String(res?.data?.reply || '').trim()
       if (!reply) throw new Error('Empty reply from assistant.')
       setChatMessages((prev) => ([...prev, { id: Date.now() + 1, role: 'assistant', content: reply }]))
@@ -192,7 +201,7 @@ export default function Sidebar({ isOpen = false, onClose }){
             ))}
           </nav>
 
-          {user ? (
+          {user && SHOW_LIVE_SUGGESTION_UI ? (
             <button
               type="button"
               className="nav-item sidebar-live-trigger"
@@ -261,7 +270,7 @@ export default function Sidebar({ isOpen = false, onClose }){
         }}
       />
 
-      {showLiveModal ? (
+      {SHOW_LIVE_SUGGESTION_UI && showLiveModal ? (
         <div className="sidebar-live-modal-backdrop" onClick={() => setShowLiveModal(false)}>
           <div
             className="sidebar-live-modal"
