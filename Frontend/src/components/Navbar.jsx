@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom'
 import Brand from './Brand'
 import { useAuth } from '../contexts/AuthContext'
 
-const PUBLIC_PATHS = ['/', '/signin', '/signup', '/auth', '/forgot', '/reset-password']
+const PUBLIC_PATHS = ['/', '/guest-nutrition-check', '/signin', '/signup', '/auth', '/forgot', '/reset-password']
 
 export default function Navbar({ isSidebarOpen = false, onToggleSidebar }){
   const { pathname } = useLocation()
@@ -20,6 +20,7 @@ export default function Navbar({ isSidebarOpen = false, onToggleSidebar }){
         <div className="topbar-right">
           {showAuthLinks ? (
             <>
+              <Link to="/guest-nutrition-check" className="nav-auth-link nav-guest-link">Track</Link>
               <Link to="/signin" className="nav-auth-link">Sign in</Link>
               <Link to="/signup" className="btn-primary" style={{ marginTop: 0, padding: '10px 14px' }}>Sign up</Link>
             </>

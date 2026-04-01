@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react'
-import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
+import React from 'react'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import Layout from './components/Layout'
 import { useAuth } from './contexts/AuthContext'
 import Dashboard from './pages/Dashboard'
@@ -17,6 +17,7 @@ import Weight from './pages/Weight'
 import Foods from './pages/Foods'
 import Insights from './pages/Insights'
 import Guide from './pages/Guide'
+import GuestNutritionCheck from './pages/GuestNutritionCheck'
 
 function RequireAuth({ children }) {
   const { user, loading } = useAuth()
@@ -26,23 +27,11 @@ function RequireAuth({ children }) {
 }
 
 export default function App(){
-  const navigate = useNavigate()
-  const location = useLocation()
-
-  useEffect(()=>{
-    try{
-      const seen = localStorage.getItem('aqtev_seen')
-      if(!seen && location.pathname === '/'){
-        localStorage.setItem('aqtev_seen', '1')
-        navigate('/signin', { replace: true })
-      }
-    }catch(e){/* ignore */}
-  }, [location.pathname, navigate])
-
   return (
     <Layout>
       <Routes>
         <Route path="/" element={<Landing />} />
+        <Route path="/guest-nutrition-check" element={<GuestNutritionCheck />} />
         <Route path="/signin" element={<SignIn />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/forgot" element={<Forgot />} />
