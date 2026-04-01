@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
 import Card from '../components/ui/Card'
 import api from '../utils/api'
 import { useAuth } from '../contexts/AuthContext'
@@ -54,6 +53,11 @@ const prettify = (value = '') =>
     .replace(/_/g, ' ')
     .replace(/\b\w/g, (char) => char.toUpperCase())
 
+const waterToLiters = (value) => {
+  const map = { '<1L': 0.8, '1-2L': 1.5, '2-3L': 2.5, '3L+': 3.2 }
+  return map[value] ?? null
+}
+
 export default function Dashboard(){
   const { user } = useAuth() || {}
   const [stats, setStats] = useState({ bmi: null, requiredCalories: null, requiredProtein: null })
@@ -65,6 +69,7 @@ export default function Dashboard(){
   const [boostFoodsByNutrient, setBoostFoodsByNutrient] = useState({})
   const [boostLoading, setBoostLoading] = useState(false)
   const [boostError, setBoostError] = useState('')
+  const [summaryRows, setSummaryRows] = useState([])
 
   useEffect(() => {
     let mounted = true
@@ -133,6 +138,47 @@ export default function Dashboard(){
 
         setActivityItems(timeline.slice(0, 4))
 
+        const loggedDays = logs.length
+        const avgCalories = loggedDays
+          ? Math.round(logs.reduce((sum, log) => sum + Number(log?.totalCalories || 0), 0) / loggedDays)
+          : 0
+        const avgProtein = loggedDays
+          ? Math.round(logs.reduce((sum, log) => sum + Number(log?.totalProtein || 0), 0) / loggedDays)
+          : 0
+        const avgFiber = loggedDays
+          ? Math.round(logs.reduce((sum, log) => sum + Number(log?.totalFiber || 0), 0) / loggedDays)
+          : 0
+
+        const waterValues = logs
+          .map((log) => waterToLiters(log?.waterIntake))
+          .filter((value) => value !== null)
+        const avgWater = waterValues.length
+          ? Math.round((waterValues.reduce((sum, value) => sum + value, 0) / waterValues.length) * 10) / 10
+          : null
+
+        const sleepValues = logs
+          .map((log) => Number(log?.sleepHours))
+          .filter((value) => Number.isFinite(value) && value > 0)
+        const avgSleep = sleepValues.length
+          ? Math.round((sleepValues.reduce((sum, value) => sum + value, 0) / sleepValues.length) * 10) / 10
+          : null
+
+        const stepValues = logs
+          .map((log) => Number(log?.steps))
+          .filter((value) => Number.isFinite(value) && value > 0)
+        const avgSteps = stepValues.length
+          ? Math.round(stepValues.reduce((sum, value) => sum + value, 0) / stepValues.length)
+          : null
+
+        setSummaryRows([
+          { label: 'Average calories', note: 'Per day', value: loggedDays ? `${avgCalories}` : '-' },
+          { label: 'Average protein', note: 'Per day', value: loggedDays ? `${avgProtein} g` : '-' },
+          { label: 'Average sleep', note: 'Logged nights', value: avgSleep !== null ? `${avgSleep} h` : '-' },
+          { label: 'Average water', note: 'Logged days', value: avgWater !== null ? `${avgWater} L` : '-' },
+          { label: 'Average fiber', note: 'Per day', value: loggedDays ? `${avgFiber} g` : '-' },
+          { label: 'Average steps', note: 'Logged days', value: avgSteps !== null ? `${avgSteps}` : '-' }
+        ])
+
         setStats({
           bmi: data.bmi ?? null,
           requiredCalories: data.requiredCalories ?? null,
@@ -178,13 +224,6 @@ export default function Dashboard(){
       accent: 'green',
       progress: stats.requiredProtein ? clampPercent(today.protein, stats.requiredProtein) : 0
     }
-  ]
-
-  const summaryItems = [
-    { label: 'Goal', value: user?.goal ? String(user.goal).replace(/_/g, ' ') : 'Complete profile' },
-    { label: 'Activity', value: user?.activityLevel ? String(user.activityLevel).replace(/_/g, ' ') : 'Not set' },
-    { label: 'Diet', value: user?.dietPreference ? String(user.dietPreference).replace(/_/g, ' ') : 'Not set' },
-    { label: 'Weight', value: user?.weightKg ? `${user.weightKg} kg` : 'Not set' }
   ]
 
   const calorieGap = Math.max(0, (stats.requiredCalories || 0) - (today.calories || 0))
@@ -439,21 +478,22 @@ export default function Dashboard(){
         <Card className="subs-card dashboard-panel dashboard-profile-panel">
           <div className="dashboard-panel-header">
             <div>
-              <h3>Profile snapshot</h3>
-              <p className="muted">A lean summary of the settings shaping your recommendations.</p>
+              <h3>Summary</h3>
+              <p className="muted">Your recent daily averages at a glance.</p>
             </div>
           </div>
 
-          <div className="dashboard-summary-list">
-            {summaryItems.map((item) => (
-              <div key={item.label} className="dashboard-summary-item">
-                <span>{item.label}</span>
-                <strong>{item.value}</strong>
+          <div className="dashboard-summary-list dashboard-summary-metric-list">
+            {summaryRows.map((row) => (
+              <div className="dashboard-summary-item dashboard-summary-metric" key={row.label}>
+                <div>
+                  <strong>{row.label}</strong>
+                  <span>{row.note}</span>
+                </div>
+                <em>{row.value}</em>
               </div>
             ))}
           </div>
-
-          <Link to="/profile" className="dashboard-link-cta">Open profile</Link>
         </Card>
       </section>
 
