@@ -404,7 +404,7 @@ a:hover{color:var(--color-accent);text-decoration:underline}
     rgba(239,68,68,0.1) 100%
   )}
 .confirm-modal > *{position:relative;z-index:1}
-.confirm-modal-close{position:absolute;top:14px;right:14px;width:40px;height:40px;border-radius:14px;border:1px solid rgba(15,23,42,0.08);background:rgba(255,255,255,0.8);font:inherit;font-size:22px;line-height:1;color:var(--color-primary);cursor:pointer;box-shadow:0 12px 24px rgba(11,31,36,0.08)}
+.confirm-modal-close{position:absolute;top:14px;right:14px;z-index:3;pointer-events:auto;width:40px;height:40px;border-radius:14px;border:1px solid rgba(15,23,42,0.08);background:rgba(255,255,255,0.8);font:inherit;font-size:22px;line-height:1;color:var(--color-primary);cursor:pointer;box-shadow:0 12px 24px rgba(11,31,36,0.08)}
 .confirm-modal-eyebrow{display:inline-flex;align-items:center;min-height:30px;padding:0 12px;border-radius:999px;background:rgba(255,255,255,0.74);border:1px solid rgba(2,132,199,0.12);font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:rgba(7,89,133,0.78)}
 .confirm-modal-head{padding-right:54px}
 .confirm-modal-head h3{margin:14px 0 10px;font-size:clamp(26px,3.4vw,34px);line-height:1.05;color:var(--color-text)}
