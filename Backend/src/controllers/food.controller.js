@@ -22,6 +22,27 @@ const setCache = (key, value) => {
   responseCache.set(key, { ts: Date.now(), value });
 };
 
+const boostRules = {
+  protein: {
+    minField: "proteinPerUnit",
+    minValue: 6,
+    sortBy: "proteinPerUnit",
+    excludeCategory: null,
+  },
+  energy: {
+    minField: "caloriesPerUnit",
+    minValue: 150,
+    sortBy: "caloriesPerUnit",
+    excludeCategory: "snack",
+  },
+  fiber: {
+    minField: "fiberPerUnit",
+    minValue: 3,
+    sortBy: "fiberPerUnit",
+    excludeCategory: null,
+  },
+};
+
 const filterStaticFoods = ({ diet, category, q }) => {
   let items = FoodData;
 
@@ -43,6 +64,40 @@ const filterStaticFoods = ({ diet, category, q }) => {
   }
 
   return items;
+};
+
+const formatBoostFood = (item = {}, nutrient = "") => {
+  const unit = item.unit || "serving";
+  if (nutrient === "protein") {
+    return {
+      ...item,
+      highlight: `${Number(item.proteinPerUnit || 0)} g protein per ${unit}`,
+    };
+  }
+  if (nutrient === "energy") {
+    return {
+      ...item,
+      highlight: `${Number(item.caloriesPerUnit || 0)} kcal per ${unit}`,
+    };
+  }
+  return {
+    ...item,
+    highlight: `${Number(item.fiberPerUnit || 0)} g fiber per ${unit}`,
+  };
+};
+
+const dedupeFoodsByName = (foods = []) => {
+  const unique = [];
+  const seen = new Set();
+
+  for (const item of foods) {
+    const name = String(item?.name || "").toLowerCase();
+    if (!name || seen.has(name)) continue;
+    seen.add(name);
+    unique.push(item);
+  }
+
+  return unique;
 };
 
 
@@ -169,4 +224,65 @@ const getCategories = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, categories, "Categories fetched."));
 });
 
-export { getAllFoods, searchFoods, getFoodById, getCategories };
+const getBoostFoods = asyncHandler(async (req, res) => {
+  const nutrient = String(req.query.nutrient || "").toLowerCase();
+  const diet = req.query.diet;
+  const limit = Math.max(1, Math.min(12, Number(req.query.limit) || 6));
+
+  if (!boostRules[nutrient]) {
+    throw new ApiError(400, "Invalid nutrient. Use protein, energy, or fiber.");
+  }
+
+  const rule = boostRules[nutrient];
+  const cacheKey = `boost:${nutrient}:${diet || "all"}:${limit}`;
+  const cached = getCache(cacheKey);
+
+  if (cached) {
+    res.set("Cache-Control", "public, max-age=120");
+    return res
+      .status(200)
+      .json(new ApiResponse(200, cached, "Boost foods fetched."));
+  }
+
+  const filter = {
+    isActive: true,
+    [rule.minField]: { $gte: rule.minValue },
+  };
+
+  if (rule.excludeCategory) {
+    filter.category = { $ne: rule.excludeCategory };
+  }
+
+  if (diet === "veg") {
+    filter.dietType = "veg";
+  }
+
+  let foods = await Food.find(filter)
+    .sort({ [rule.sortBy]: -1, proteinPerUnit: -1, fiberPerUnit: -1, caloriesPerUnit: -1 })
+    .limit(limit * 3)
+    .lean()
+    .select(
+      "name nameHindi unit caloriesPerUnit proteinPerUnit carbsPerUnit fatsPerUnit fiberPerUnit calciumPerUnit vitamins category dietType"
+    );
+
+  if (!foods.length) {
+    foods = filterStaticFoods({ diet })
+      .filter((item) => Number(item?.[rule.minField] || 0) >= rule.minValue)
+      .filter((item) => !rule.excludeCategory || item.category !== rule.excludeCategory)
+      .sort((a, b) => Number(b?.[rule.sortBy] || 0) - Number(a?.[rule.sortBy] || 0))
+      .slice(0, limit * 3);
+  }
+
+  const deduped = dedupeFoodsByName(foods)
+    .slice(0, limit)
+    .map((item) => formatBoostFood(item, nutrient));
+
+  setCache(cacheKey, deduped);
+  res.set("Cache-Control", "public, max-age=120");
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, deduped, "Boost foods fetched."));
+});
+
+export { getAllFoods, searchFoods, getFoodById, getCategories, getBoostFoods };
