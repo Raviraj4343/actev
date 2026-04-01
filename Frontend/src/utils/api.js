@@ -296,6 +296,10 @@ export function getWeeklySummary(){
   return request('/insight/summary')
 }
 
+export function getGuideActionPlan(payload = {}){
+  return request('/insight/action-plan', { method: 'POST', body: payload })
+}
+
 // Simple local token helpers (optional — backend uses cookies)
 export function saveToken(token){
   try{ localStorage.setItem('aqtev_access', token) }catch{}
@@ -347,6 +351,7 @@ export default {
   // insight
   getTodayInsight,
   getWeeklySummary,
+  getGuideActionPlan,
   // tokens
   saveToken,
   readToken,

@@ -185,6 +185,9 @@ const buildRecommendations = ({
 export default function Guide() {
   const { user } = useAuth() || {}
   const [todayLog, setTodayLog] = useState(null)
+  const [realtimePlan, setRealtimePlan] = useState(null)
+  const [planSource, setPlanSource] = useState('fallback')
+  const [planLoading, setPlanLoading] = useState(false)
   const [loading, setLoading] = useState(true)
   const [dailyDiet, setDailyDiet] = useState('')
   const [medicalConditions, setMedicalConditions] = useState('')
@@ -216,6 +219,39 @@ export default function Guide() {
 
     return () => { mounted = false }
   }, [])
+
+  useEffect(() => {
+    if (loading) return undefined
+
+    let cancelled = false
+    const timer = setTimeout(async () => {
+      setPlanLoading(true)
+      try {
+        const res = await api.getGuideActionPlan({
+          goal: focusGoal || resolvedGoal,
+          dailyDiet,
+          medicalConditions
+        })
+
+        if (cancelled) return
+        const plan = res?.data?.plan || null
+        setRealtimePlan(plan && typeof plan === 'object' ? plan : null)
+        setPlanSource(res?.data?.source || 'fallback')
+      } catch {
+        if (!cancelled) {
+          setRealtimePlan(null)
+          setPlanSource('fallback')
+        }
+      } finally {
+        if (!cancelled) setPlanLoading(false)
+      }
+    }, 500)
+
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+  }, [dailyDiet, focusGoal, loading, medicalConditions, resolvedGoal])
 
   const report = useMemo(() => {
     const profile = {
@@ -420,6 +456,23 @@ export default function Guide() {
 
   const radarPolygon = radarPoints.map((point) => `${point.plot.x},${point.plot.y}`).join(' ')
   const activeRadarPoint = radarPoints[activeRadarIndex] || radarPoints[0] || null
+  const aiActionPlan = Array.isArray(realtimePlan?.actionPlan) ? realtimePlan.actionPlan : []
+  const visibleRecommendations = aiActionPlan.length
+    ? aiActionPlan.map((text, index) => {
+      if (text && typeof text === 'object') {
+        return {
+          title: text.title || `Action ${index + 1}`,
+          body: text.body || ''
+        }
+      }
+      return { title: `Action ${index + 1}`, body: String(text || '') }
+    })
+    : report.recommendations.map((item) => ({ title: item.title, body: item.body }))
+
+  const aiRiskFlags = Array.isArray(realtimePlan?.riskFlags) ? realtimePlan.riskFlags : []
+  const aiNutritionFocus = Array.isArray(realtimePlan?.nutritionFocus) ? realtimePlan.nutritionFocus : []
+  const aiTrainingFocus = Array.isArray(realtimePlan?.trainingFocus) ? realtimePlan.trainingFocus : []
+  const aiRecoveryFocus = Array.isArray(realtimePlan?.recoveryFocus) ? realtimePlan.recoveryFocus : []
 
   return (
     <div className="page feature-page guide-page">
@@ -514,6 +567,9 @@ export default function Guide() {
               <Button onClick={() => { setDailyDiet(''); setMedicalConditions(''); setFocusGoal(resolvedGoal) }} variant="ghost">
                 Reset context
               </Button>
+                <span className="muted">
+                  {planLoading ? 'Refreshing action plan...' : `Action plan source: ${planSource === 'ai' ? 'AI realtime' : 'App fallback'}`}
+                </span>
             </div>
           </div>
         </Card>
@@ -659,13 +715,47 @@ export default function Guide() {
           </div>
 
           <div className="guide-recommendations guide-recommendations-stack">
-            {report.recommendations.map((item) => (
-              <div key={item.title} className="guide-recommendation-card">
-                <span>{item.title}</span>
+            {visibleRecommendations.map((item, idx) => (
+              <div key={`${item.title}-${idx}`} className="guide-recommendation-card">
+                <span>{item.title || `Action ${idx + 1}`}</span>
                 <strong>{item.body}</strong>
               </div>
             ))}
           </div>
+
+          {aiRiskFlags.length ? (
+            <div className="guide-recommendations guide-recommendations-stack" style={{ marginTop: 14 }}>
+              {aiRiskFlags.map((item, idx) => (
+                <div key={`risk-${idx}`} className="guide-recommendation-card">
+                  <span>Risk flag</span>
+                  <strong>{item}</strong>
+                </div>
+              ))}
+            </div>
+          ) : null}
+
+          {aiNutritionFocus.length || aiTrainingFocus.length || aiRecoveryFocus.length ? (
+            <div className="guide-kpi-stack" style={{ marginTop: 14 }}>
+              {aiNutritionFocus.length ? (
+                <div className="guide-kpi-card">
+                  <span>Nutrition focus</span>
+                  <strong>{aiNutritionFocus[0]}</strong>
+                </div>
+              ) : null}
+              {aiTrainingFocus.length ? (
+                <div className="guide-kpi-card">
+                  <span>Training focus</span>
+                  <strong>{aiTrainingFocus[0]}</strong>
+                </div>
+              ) : null}
+              {aiRecoveryFocus.length ? (
+                <div className="guide-kpi-card">
+                  <span>Recovery focus</span>
+                  <strong>{aiRecoveryFocus[0]}</strong>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
         </Card>
       </section>
     </div>
