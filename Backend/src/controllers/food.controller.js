@@ -5,6 +5,22 @@ import ApiResponse from "../utils/ApiResponse.js";
 import ApiError from "../utils/ApiError.js";
 
 const escapeRegex = (text = "") => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const CACHE_TTL_MS = 2 * 60 * 1000;
+const responseCache = new Map();
+
+const getCache = (key) => {
+  const cached = responseCache.get(key);
+  if (!cached) return null;
+  if (Date.now() - cached.ts > CACHE_TTL_MS) {
+    responseCache.delete(key);
+    return null;
+  }
+  return cached.value;
+};
+
+const setCache = (key, value) => {
+  responseCache.set(key, { ts: Date.now(), value });
+};
 
 const filterStaticFoods = ({ diet, category, q }) => {
   let items = FoodData;
@@ -32,6 +48,15 @@ const filterStaticFoods = ({ diet, category, q }) => {
 
 const getAllFoods = asyncHandler(async (req, res) => {
   const { diet, category } = req.query;
+  const cacheKey = `all:${diet || "all"}:${category || "all"}`;
+  const cached = getCache(cacheKey);
+
+  if (cached) {
+    res.set("Cache-Control", "public, max-age=120");
+    return res
+      .status(200)
+      .json(new ApiResponse(200, cached, "Foods fetched successfully."));
+  }
 
   const filter = { isActive: true };
 
@@ -55,6 +80,9 @@ const getAllFoods = asyncHandler(async (req, res) => {
     foods = filterStaticFoods({ diet, category });
   }
 
+  setCache(cacheKey, foods);
+  res.set("Cache-Control", "public, max-age=120");
+
   return res
     .status(200)
     .json(new ApiResponse(200, foods, "Foods fetched successfully."));
@@ -68,6 +96,16 @@ const searchFoods = asyncHandler(async (req, res) => {
   }
 
   const term = q.trim();
+  const cacheKey = `search:${term.toLowerCase()}`;
+  const cached = getCache(cacheKey);
+
+  if (cached) {
+    res.set("Cache-Control", "public, max-age=120");
+    return res
+      .status(200)
+      .json(new ApiResponse(200, cached, "Search results."));
+  }
+
   const safeRegex = new RegExp(escapeRegex(term), "i");
 
   let foods = await Food.find({
@@ -87,6 +125,9 @@ const searchFoods = asyncHandler(async (req, res) => {
     foods = filterStaticFoods({ q: term }).slice(0, 10);
   }
 
+  setCache(cacheKey, foods);
+  res.set("Cache-Control", "public, max-age=120");
+
   return res
     .status(200)
     .json(new ApiResponse(200, foods, "Search results."));
@@ -104,11 +145,24 @@ const getFoodById = asyncHandler(async (req, res) => {
 
 
 const getCategories = asyncHandler(async (req, res) => {
+  const cacheKey = "categories";
+  const cached = getCache(cacheKey);
+
+  if (cached) {
+    res.set("Cache-Control", "public, max-age=120");
+    return res
+      .status(200)
+      .json(new ApiResponse(200, cached, "Categories fetched."));
+  }
+
   let categories = await Food.distinct("category", { isActive: true });
 
   if (!categories.length) {
     categories = [...new Set(FoodData.map((item) => item.category))];
   }
+
+  setCache(cacheKey, categories);
+  res.set("Cache-Control", "public, max-age=120");
 
   return res
     .status(200)

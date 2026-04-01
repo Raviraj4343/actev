@@ -86,6 +86,9 @@ const foodSchema = new mongoose.Schema(
 
 // Text search index
 foodSchema.index({ name: "text", nameHindi: "text" });
+// Common read paths used by listing/filtering routes.
+foodSchema.index({ isActive: 1, category: 1, name: 1 });
+foodSchema.index({ isActive: 1, dietType: 1, category: 1, name: 1 });
 
 const Food = mongoose.model("Food", foodSchema);
 

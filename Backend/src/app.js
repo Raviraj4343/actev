@@ -1,6 +1,7 @@
 import express from "express";
 import helmet from "helmet";
 import cors from "cors";
+import compression from "compression";
 import rateLimit from "express-rate-limit";
 import morgan from "morgan";
 import cookieParser from "cookie-parser";
@@ -80,6 +81,9 @@ app.use(
     optionsSuccessStatus: 204,
   })
 );
+
+// Compress JSON/text responses for faster delivery on production networks.
+app.use(compression());
 
 // Note: global CORS middleware above handles preflight requests
 
