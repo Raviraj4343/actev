@@ -6,6 +6,24 @@ import { DB_NAME, MONGODB_URI } from "../constants.js";
 
 dotenv.config();
 
+const dedupeFoodsByName = (foods) => {
+  const seenNames = new Set();
+  const uniqueFoods = [];
+  let skippedCount = 0;
+
+  foods.forEach((food) => {
+    if (seenNames.has(food.name)) {
+      skippedCount += 1;
+      return;
+    }
+
+    seenNames.add(food.name);
+    uniqueFoods.push(food);
+  });
+
+  return { uniqueFoods, skippedCount };
+};
+
 const seed = async () => {
   try {
     await mongoose.connect(`${MONGODB_URI}/${DB_NAME}`);
@@ -14,7 +32,12 @@ const seed = async () => {
     await FoodModel.deleteMany({});
     console.log("Cleared existing food data");
 
-    const inserted = await FoodModel.insertMany(Food);
+    const { uniqueFoods, skippedCount } = dedupeFoodsByName(Food);
+    if (skippedCount > 0) {
+      console.log(`Skipped ${skippedCount} duplicate food names from source data.`);
+    }
+
+    const inserted = await FoodModel.insertMany(uniqueFoods);
     console.log(`Seeded ${inserted.length} food items successfully.`);
 
     await mongoose.disconnect();
