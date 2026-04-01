@@ -3,6 +3,7 @@ import Brand from './Brand'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import ConfirmationModal from './ConfirmationModal'
+import * as api from '../utils/api'
 
 const baseItems = [
   {
@@ -84,11 +85,68 @@ export default function Sidebar({ isOpen = false, onClose }){
   const { user, logout } = useAuth() || {}
   const navigate = useNavigate()
   const [showSignOutConfirm, setShowSignOutConfirm] = React.useState(false)
+  const [showLiveModal, setShowLiveModal] = React.useState(false)
+  const [liveInput, setLiveInput] = React.useState('')
+  const [chatMessages, setChatMessages] = React.useState([])
+  const [liveLoading, setLiveLoading] = React.useState(false)
+  const [liveError, setLiveError] = React.useState('')
+  const chatEndRef = React.useRef(null)
 
   const cls = ['sidebar']
   if (!isOpen) cls.push('closed')
 
   const visibleItems = user ? [...baseItems, ...authItems] : baseItems
+
+  React.useEffect(() => {
+    if (!isOpen) {
+      setShowLiveModal(false)
+      setLiveInput('')
+      setChatMessages([])
+      setLiveError('')
+    }
+  }, [isOpen])
+
+  React.useEffect(() => {
+    if (showLiveModal) {
+      chatEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+    }
+  }, [chatMessages, showLiveModal, liveLoading])
+
+  const handleGetLiveSuggestion = async () => {
+    const prompt = liveInput.trim()
+    if (!prompt) {
+      setLiveError('Please type your question first.')
+      return
+    }
+    if (liveLoading) return
+
+    const history = chatMessages
+      .slice(-12)
+      .map((message) => ({ role: message.role, content: message.content }))
+
+    setChatMessages((prev) => ([...prev, { id: Date.now(), role: 'user', content: prompt }]))
+    setLiveInput('')
+
+    setLiveLoading(true)
+    setLiveError('')
+
+    try {
+      const res = await api.getGuideLiveSuggestion({ prompt, goal: user?.goal, history })
+      const reply = String(res?.data?.reply || '').trim()
+      if (!reply) throw new Error('Empty reply from assistant.')
+      setChatMessages((prev) => ([...prev, { id: Date.now() + 1, role: 'assistant', content: reply }]))
+    } catch (err) {
+      setLiveError(err?.payload?.message || err?.message || 'Unable to get suggestion right now.')
+    } finally {
+      setLiveLoading(false)
+    }
+  }
+
+  const handleNewChat = () => {
+    setLiveInput('')
+    setChatMessages([])
+    setLiveError('')
+  }
 
   return (
     <>
@@ -132,6 +190,24 @@ export default function Sidebar({ isOpen = false, onClose }){
               </NavLink>
             ))}
           </nav>
+
+          {user ? (
+            <button
+              type="button"
+              className="nav-item sidebar-live-trigger"
+              onClick={() => setShowLiveModal(true)}
+            >
+              <span className="nav-item-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path d="M4 5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H9l-4 4v-4H6a2 2 0 0 1-2-2V5Zm4 3v2h8V8H8Zm0 4v2h6v-2H8Z" />
+                </svg>
+              </span>
+              <span className="nav-item-copy">
+                <span className="nav-item-label">Live Suggestion</span>
+                <span className="nav-item-description">Open chatbot prompt popup</span>
+              </span>
+            </button>
+          ) : null}
         </div>
 
         <div className="sidebar-footer">
@@ -183,6 +259,85 @@ export default function Sidebar({ isOpen = false, onClose }){
           navigate('/')
         }}
       />
+
+      {showLiveModal ? (
+        <div className="sidebar-live-modal-backdrop" onClick={() => setShowLiveModal(false)} aria-hidden="true">
+          <div
+            className="sidebar-live-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="sidebar-live-modal-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="sidebar-live-modal-close"
+              aria-label="Close live suggestion"
+              onClick={() => setShowLiveModal(false)}
+            >
+              x
+            </button>
+            <h3 id="sidebar-live-modal-title">Live Suggestion</h3>
+            <p className="muted">Mini chat with temporary session context only.</p>
+
+            <div className="sidebar-live-head-row">
+              <button type="button" className="btn-ghost sidebar-live-new" onClick={handleNewChat}>New chat</button>
+            </div>
+
+            {liveError ? <div className="sidebar-live-error">{liveError}</div> : null}
+
+            <div className="sidebar-chat-thread" role="log" aria-live="polite">
+              {!chatMessages.length ? (
+                <div className="sidebar-chat-empty">Ask about budget meals, macros, workouts, or sleep.</div>
+              ) : null}
+
+              {chatMessages.map((message) => (
+                <div key={message.id} className={`sidebar-chat-bubble ${message.role === 'assistant' ? 'bot' : 'user'}`}>
+                  <strong>{message.role === 'assistant' ? 'AQTEV Coach' : 'You'}</strong>
+                  {message.role === 'assistant' ? <pre>{message.content}</pre> : <p>{message.content}</p>}
+                </div>
+              ))}
+
+              {liveLoading ? (
+                <div className="sidebar-chat-bubble bot sidebar-chat-typing">
+                  <strong>AQTEV Coach</strong>
+                  <p>Thinking...</p>
+                </div>
+              ) : null}
+
+              <div ref={chatEndRef} />
+            </div>
+
+            <div className="sidebar-chat-compose">
+              <textarea
+                className="sidebar-live-input"
+                placeholder="Send a message..."
+                value={liveInput}
+                onChange={(event) => {
+                  setLiveInput(event.target.value)
+                  if (liveError) setLiveError('')
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' && !event.shiftKey) {
+                    event.preventDefault()
+                    handleGetLiveSuggestion()
+                  }
+                }}
+                rows={2}
+              />
+
+              <button
+                type="button"
+                className="btn-primary sidebar-live-btn"
+                onClick={handleGetLiveSuggestion}
+                disabled={liveLoading}
+              >
+                Send
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </>
   )
 }

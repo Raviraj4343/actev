@@ -9,7 +9,7 @@ import {
   computeHealthReport,
 } from "../utils/HealthCalculation.js";
 import DailyLog from "../models/dailylog.model.js";
-import { generateRealtimeActionPlan } from "../utils/healthActionPlanAI.js";
+import { generateRealtimeActionPlan, generateGuideLiveSuggestion } from "../utils/healthActionPlanAI.js";
 
 const getTodayIST = () =>
   new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
@@ -239,6 +239,87 @@ const getActionPlan = asyncHandler(async (req, res) => {
   );
 });
 
+const getLiveSuggestion = asyncHandler(async (req, res) => {
+  const user = req.user;
+  const today = getTodayIST();
+  const { prompt, goal, history } = req.body || {};
+
+  const userPrompt = String(prompt || "").trim();
+  if (!userPrompt) {
+    throw new ApiError(400, "Prompt is required.");
+  }
+
+  const activeGoal = goal || user.goal;
+  const chatHistory = Array.isArray(history)
+    ? history
+        .slice(-12)
+        .map((entry) => ({
+          role: entry?.role === "assistant" ? "assistant" : "user",
+          content: String(entry?.content || "").trim(),
+        }))
+        .filter((entry) => entry.content)
+    : [];
+
+  const log = await DailyLog.findOne({ userId: user._id, date: today });
+  const totals = {
+    totalCalories: log?.totalCalories || 0,
+    totalProtein: log?.totalProtein || 0,
+    sleepHours: log?.sleepHours ?? null,
+    steps: log?.steps ?? null,
+    waterIntake: log?.waterIntake ?? null,
+  };
+
+  const { bmi, category: bmiCategory } = calculateBMI(user.weightKg, user.heightCm);
+  const requiredCalories = calculateDailyCalories({ ...user.toObject(), goal: activeGoal });
+  const requiredProtein = calculateDailyProtein(user.weightKg, activeGoal);
+  const calorieGap = Math.max(0, requiredCalories - totals.totalCalories);
+  const proteinGap = Math.max(0, requiredProtein - totals.totalProtein);
+  let reply = "";
+
+  try {
+    reply = await generateGuideLiveSuggestion({
+      userName: user.name,
+      userPrompt,
+      goal: activeGoal,
+      dietPreference: user.dietPreference,
+      bmi,
+      bmiCategory,
+      requiredCalories,
+      requiredProtein,
+      actualCalories: totals.totalCalories,
+      actualProtein: totals.totalProtein,
+      sleepHours: totals.sleepHours,
+      steps: totals.steps,
+      waterIntake: totals.waterIntake,
+      calorieGap,
+      proteinGap,
+      chatHistory,
+    });
+  } catch (err) {
+    if (Number(err?.statusCode) === 429) {
+      throw new ApiError(429, err?.message || "Gemini quota limit reached. Please retry shortly.");
+    }
+    throw new ApiError(
+      502,
+      "Live AI is currently unavailable. Please try again shortly."
+    );
+  }
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        date: today,
+        source: "ai",
+        prompt: userPrompt,
+        reply,
+        contextWindow: chatHistory.length,
+      },
+      "Live suggestion generated."
+    )
+  );
+});
+
 
 const computeHealthScore = ({ avgCalories, requiredCalories, avgProtein, requiredProtein, avgSleep }) => {
   let score = 100;
@@ -259,4 +340,4 @@ const computeHealthScore = ({ avgCalories, requiredCalories, avgProtein, require
   return Math.max(score, 0);
 };
 
-export { getTodayInsight, getWeeklySummary, getActionPlan };
+export { getTodayInsight, getWeeklySummary, getActionPlan, getLiveSuggestion };

@@ -306,6 +306,10 @@ export function getGuideActionPlan(payload = {}){
   return request('/insight/action-plan', { method: 'POST', body: payload })
 }
 
+export function getGuideLiveSuggestion(payload = {}){
+  return request('/insight/live-suggestion', { method: 'POST', body: payload })
+}
+
 // Simple local token helpers (optional — backend uses cookies)
 export function saveToken(token){
   try{ localStorage.setItem('aqtev_access', token) }catch{}
@@ -359,6 +363,7 @@ export default {
   getTodayInsight,
   getWeeklySummary,
   getGuideActionPlan,
+  getGuideLiveSuggestion,
   // tokens
   saveToken,
   readToken,

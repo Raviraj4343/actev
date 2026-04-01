@@ -1,6 +1,55 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const MODEL_NAME = "gemini-1.5-flash";
+const ONE_FIVE_CANDIDATES = [
+  "gemini-1.5-flash",
+  "gemini-1.5-flash-latest",
+  "gemini-1.5-flash-002",
+];
+
+const getModelCandidates = () => {
+  // Force 1.5-family models only to avoid 2.0 quota failures.
+  const configured = String(process.env.HEALTH_MODEL || "gemini-1.5-flash").trim();
+  const normalized = configured.toLowerCase();
+  const effective = normalized.includes("1.5") ? configured : "gemini-1.5-flash";
+  return [effective, ...ONE_FIVE_CANDIDATES.filter((name) => name !== effective)];
+};
+
+const getGeminiApiKey = () => {
+  const key = String(process.env.GEMINI_API_KEY || process.env.HEALTH_API || "").trim();
+  if (!key) {
+    throw new Error("GEMINI_API_KEY is missing in environment variables.");
+  }
+  return key;
+};
+
+const isRateLimitError = (err) => {
+  const message = String(err?.message || "").toLowerCase();
+  return message.includes("429") || message.includes("too many requests") || message.includes("quota");
+};
+
+const extractRetrySeconds = (err) => {
+  const message = String(err?.message || "");
+  const match = message.match(/retry\s+in\s+([\d.]+)s/i);
+  if (!match) return null;
+  const seconds = Number(match[1]);
+  return Number.isFinite(seconds) ? Math.ceil(seconds) : null;
+};
+
+const wrapGeminiError = (err, modelName) => {
+  const e = new Error(err?.message || "Gemini request failed.");
+  if (isRateLimitError(err)) {
+    const retryAfter = extractRetrySeconds(err);
+    e.message = retryAfter
+      ? `Gemini quota limit reached for ${modelName}. Please retry in ${retryAfter}s.`
+      : `Gemini quota limit reached for ${modelName}. Please retry shortly.`;
+    e.statusCode = 429;
+    e.retryAfterSeconds = retryAfter;
+  } else {
+    e.statusCode = 502;
+  }
+  e.modelName = modelName;
+  return e;
+};
 
 const MAX_WORDS = 15;
 
@@ -122,20 +171,145 @@ const normalizePlan = (parsed) => {
   };
 };
 
-const generateRealtimeActionPlan = async (payload) => {
-  const apiKey = process.env.HEALTH_API;
-  if (!apiKey) {
-    throw new Error("HEALTH_API is missing in environment variables.");
-  }
+const generateGuideLiveSuggestion = async (payload) => {
+  const apiKey = getGeminiApiKey();
+
+  const {
+    userName,
+    userPrompt,
+    chatHistory,
+    goal,
+    dietPreference,
+    bmi,
+    bmiCategory,
+    requiredCalories,
+    requiredProtein,
+    actualCalories,
+    actualProtein,
+    sleepHours,
+    steps,
+    waterIntake,
+    calorieGap,
+    proteinGap,
+  } = payload || {};
+
+  const historyBlock = Array.isArray(chatHistory) && chatHistory.length
+    ? chatHistory
+        .slice(-12)
+        .map((entry, index) => {
+          const role = entry?.role === "assistant" ? "Coach" : "User";
+          return `${index + 1}. ${role}: ${String(entry?.content || "").trim()}`;
+        })
+        .join("\n")
+    : "No previous messages in this chat.";
 
   const client = new GoogleGenerativeAI(apiKey);
-  const model = client.getGenerativeModel({ model: MODEL_NAME });
+  const prompt = `You are a helpful health and fitness assistant for AQTEV.
+
+Speak directly to the user by name when possible.
+User name: ${userName || "there"}
+
+User context:
+- Goal: ${goal || "maintain"}
+- Diet preference: ${dietPreference || "unknown"}
+- BMI: ${bmi ?? "unknown"} (${bmiCategory || "unknown"})
+- Required calories: ${requiredCalories ?? "unknown"}
+- Required protein (g): ${requiredProtein ?? "unknown"}
+- Today's calories: ${actualCalories ?? 0}
+- Today's protein (g): ${actualProtein ?? 0}
+- Calorie gap: ${calorieGap ?? 0}
+- Protein gap: ${proteinGap ?? 0}
+- Sleep (hours): ${sleepHours ?? "not logged"}
+- Steps: ${steps ?? "not logged"}
+- Water intake: ${waterIntake ?? "not logged"}
+
+Current chat context (session-only, not permanently stored):
+${historyBlock}
+
+User question/request:
+${String(userPrompt || "").trim()}
+
+Instructions:
+- Keep the tone warm, practical, and concise.
+- Give tailored guidance from the provided context.
+- Continue naturally from prior messages when relevant.
+- Avoid medical diagnosis.
+- If there is risk, mention it clearly but calmly.
+- Provide a short response in markdown style:
+  1) one opening sentence addressing the user name
+  2) 3-5 bullet suggestions
+  3) one short next-step line.
+`;
+
+  let lastError = null;
+  let text = "";
+
+  for (const modelName of getModelCandidates()) {
+    try {
+      const model = client.getGenerativeModel({ model: modelName });
+      const result = await model.generateContent(prompt);
+      text = String(result?.response?.text?.() || "").trim();
+      if (text) {
+        console.info(`[HEALTH_AI] Live suggestion model selected: ${modelName}`);
+        break;
+      }
+    } catch (err) {
+      lastError = wrapGeminiError(err, modelName);
+      const message = String(err?.message || "").toLowerCase();
+      const isModelLookupError =
+        message.includes("model") &&
+        (message.includes("not found") || message.includes("not supported"));
+      if (!isModelLookupError) {
+        throw lastError;
+      }
+    }
+  }
+
+  if (!text) {
+    if (lastError) throw lastError;
+    throw new Error("Empty response from model");
+  }
+
+  return text;
+};
+
+const generateRealtimeActionPlan = async (payload) => {
+  const apiKey = getGeminiApiKey();
+
+  const client = new GoogleGenerativeAI(apiKey);
   const prompt = buildPrompt(payload);
 
-  const result = await model.generateContent(prompt);
-  const text = result?.response?.text?.() || "";
+  let lastError = null;
+  let text = "";
+
+  for (const modelName of getModelCandidates()) {
+    try {
+      const model = client.getGenerativeModel({ model: modelName });
+      const result = await model.generateContent(prompt);
+      text = String(result?.response?.text?.() || "");
+      if (text.trim()) {
+        console.info(`[HEALTH_AI] Action plan model selected: ${modelName}`);
+        break;
+      }
+    } catch (err) {
+      lastError = wrapGeminiError(err, modelName);
+      const message = String(err?.message || "").toLowerCase();
+      const isModelLookupError =
+        message.includes("model") &&
+        (message.includes("not found") || message.includes("not supported"));
+      if (!isModelLookupError) {
+        throw lastError;
+      }
+    }
+  }
+
+  if (!text.trim()) {
+    if (lastError) throw lastError;
+    throw new Error("Empty response from model");
+  }
+
   const parsed = safeJsonParse(text);
   return normalizePlan(parsed);
 };
 
-export { generateRealtimeActionPlan };
+export { generateRealtimeActionPlan, generateGuideLiveSuggestion };
