@@ -182,6 +182,64 @@ const buildRecommendations = ({
   return list.slice(0, 3)
 }
 
+const getNutrientKey = (label = '') => {
+  const text = String(label).toLowerCase()
+  if (text.includes('protein')) return 'protein'
+  if (text.includes('energy') || text.includes('calorie')) return 'energy'
+  if (text.includes('fiber')) return 'fiber'
+  return null
+}
+
+const rankFoodsForNutrient = (foods = [], nutrientKey) => {
+  if (!nutrientKey || !Array.isArray(foods) || !foods.length) return []
+
+  const scored = foods
+    .map((food) => {
+      const protein = Number(food?.proteinPerUnit || 0)
+      const calories = Number(food?.caloriesPerUnit || 0)
+      const fiber = Number(food?.fiberPerUnit || 0)
+      const category = String(food?.category || '').toLowerCase()
+
+      if (!food?.name) return null
+
+      if (nutrientKey === 'protein') {
+        if (protein < 6) return null
+        const score = protein * 4 + fiber * 0.8 + calories * 0.05
+        return { food, score, highlight: `${protein} g protein per ${food.unit || 'serving'}` }
+      }
+
+      if (nutrientKey === 'energy') {
+        if (calories < 150) return null
+        if (category === 'snack') return null
+        const score = calories * 1.2 + protein * 1.6 + fiber * 1.2
+        return { food, score, highlight: `${calories} kcal per ${food.unit || 'serving'}` }
+      }
+
+      if (nutrientKey === 'fiber') {
+        if (fiber < 3) return null
+        const score = fiber * 5 + protein * 0.5 + calories * 0.03
+        return { food, score, highlight: `${fiber} g fiber per ${food.unit || 'serving'}` }
+      }
+
+      return null
+    })
+    .filter(Boolean)
+    .sort((a, b) => b.score - a.score)
+
+  const unique = []
+  const seen = new Set()
+
+  for (const row of scored) {
+    const key = String(row.food.name).toLowerCase()
+    if (seen.has(key)) continue
+    seen.add(key)
+    unique.push(row)
+    if (unique.length === 6) break
+  }
+
+  return unique
+}
+
 export default function Guide() {
   const { user } = useAuth() || {}
   const [todayLog, setTodayLog] = useState(null)
@@ -193,6 +251,11 @@ export default function Guide() {
   const [medicalConditions, setMedicalConditions] = useState('')
   const [focusGoal, setFocusGoal] = useState(null)
   const [activeRadarIndex, setActiveRadarIndex] = useState(0)
+  const [foodCatalog, setFoodCatalog] = useState([])
+  const [foodCatalogLoading, setFoodCatalogLoading] = useState(false)
+  const [foodCatalogError, setFoodCatalogError] = useState('')
+  const [foodCatalogAttempted, setFoodCatalogAttempted] = useState(false)
+  const [activeFoodGuide, setActiveFoodGuide] = useState(null)
 
   const resolvedGoal = ['weight_loss', 'muscle_gain', 'maintain'].includes(user?.goal)
     ? user.goal
@@ -252,6 +315,45 @@ export default function Guide() {
       clearTimeout(timer)
     }
   }, [dailyDiet, focusGoal, loading, medicalConditions, resolvedGoal])
+
+  useEffect(() => {
+    if (!activeFoodGuide) return undefined
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') setActiveFoodGuide(null)
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [activeFoodGuide])
+
+  useEffect(() => {
+    if (!activeFoodGuide || foodCatalog.length || foodCatalogLoading || foodCatalogAttempted) return
+
+    let cancelled = false
+
+    async function loadFoods() {
+      setFoodCatalogLoading(true)
+      setFoodCatalogAttempted(true)
+      setFoodCatalogError('')
+
+      try {
+        const diet = user?.dietPreference === 'veg' ? 'veg' : undefined
+        const res = await api.getAllFoods(diet ? { diet } : {})
+        if (cancelled) return
+        const list = Array.isArray(res?.data) ? res.data : []
+        setFoodCatalog(list)
+      } catch {
+        if (cancelled) return
+        setFoodCatalogError('Unable to load food suggestions right now.')
+      } finally {
+        if (!cancelled) setFoodCatalogLoading(false)
+      }
+    }
+
+    loadFoods()
+    return () => { cancelled = true }
+  }, [activeFoodGuide, foodCatalog.length, foodCatalogLoading, foodCatalogAttempted, user?.dietPreference])
 
   const report = useMemo(() => {
     const profile = {
@@ -473,6 +575,16 @@ export default function Guide() {
   const aiNutritionFocus = Array.isArray(realtimePlan?.nutritionFocus) ? realtimePlan.nutritionFocus : []
   const aiTrainingFocus = Array.isArray(realtimePlan?.trainingFocus) ? realtimePlan.trainingFocus : []
   const aiRecoveryFocus = Array.isArray(realtimePlan?.recoveryFocus) ? realtimePlan.recoveryFocus : []
+  const suggestedFoods = useMemo(
+    () => rankFoodsForNutrient(foodCatalog, activeFoodGuide?.nutrientKey),
+    [foodCatalog, activeFoodGuide?.nutrientKey]
+  )
+
+  const openFoodGuide = (gap) => {
+    const nutrientKey = getNutrientKey(gap?.label)
+    if (!nutrientKey) return
+    setActiveFoodGuide({ label: gap.label, nutrientKey })
+  }
 
   return (
     <div className="page feature-page guide-page">
@@ -666,9 +778,19 @@ export default function Guide() {
               {radarItems.map((item) => (
                 <div
                   key={item.label}
-                  className={`guide-radar-legend-item ${activeRadarIndex === item.index ? 'active' : ''}`}
+                  className={`guide-radar-legend-item ${activeRadarIndex === item.index ? 'active' : ''} ${getNutrientKey(item.label) ? 'actionable' : ''}`}
+                  role={getNutrientKey(item.label) ? 'button' : undefined}
+                  aria-label={getNutrientKey(item.label) ? `View food ideas to boost ${item.label}` : undefined}
                   onMouseEnter={() => setActiveRadarIndex(item.index)}
                   onFocus={() => setActiveRadarIndex(item.index)}
+                  onClick={() => openFoodGuide(item)}
+                  onKeyDown={(event) => {
+                    if (!getNutrientKey(item.label)) return
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault()
+                      openFoodGuide(item)
+                    }
+                  }}
                   tabIndex="0"
                 >
                   <div className="guide-radar-legend-top">
@@ -678,6 +800,7 @@ export default function Guide() {
                       <div className="guide-gap-severity">{item.aligned}%</div>
                     </div>
                   </div>
+                  {getNutrientKey(item.label) ? <small>Tap to view food boosters</small> : null}
                   <div className="guide-radar-legend-track" aria-hidden="true">
                     <span style={{ width: `${item.aligned}%` }} />
                   </div>
@@ -758,6 +881,62 @@ export default function Guide() {
           ) : null}
         </Card>
       </section>
+
+      {activeFoodGuide ? (
+        <div className="dashboard-modal-backdrop" onClick={() => setActiveFoodGuide(null)} aria-hidden="true">
+          <div
+            className="dashboard-modal guide-food-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="guide-food-modal-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="dashboard-modal-close"
+              aria-label="Close food suggestions"
+              onClick={() => setActiveFoodGuide(null)}
+            >
+              ×
+            </button>
+
+            <div className="dashboard-modal-head">
+              <span className="dashboard-eyebrow">Nutrition Boost</span>
+              <h3 id="guide-food-modal-title">Foods to boost {activeFoodGuide.label}</h3>
+              <p className="muted">
+                Suggestions come from your app food library and are ranked for this nutrient.
+              </p>
+            </div>
+
+            <div className="dashboard-modal-body">
+              <div className="dashboard-modal-highlight">
+                <span>Diet preference</span>
+                <strong>{prettify(user?.dietPreference || 'mixed')}</strong>
+              </div>
+
+              {foodCatalogLoading ? <p className="muted">Loading food suggestions...</p> : null}
+              {foodCatalogError ? <p className="muted">{foodCatalogError}</p> : null}
+
+              {!foodCatalogLoading && !foodCatalogError ? (
+                <div className="guide-food-list">
+                  {suggestedFoods.length ? suggestedFoods.map(({ food, highlight }) => (
+                    <div className="guide-food-item" key={`${activeFoodGuide.nutrientKey}-${food.name}`}>
+                      <div>
+                        <strong>{food.name}</strong>
+                        <span>{food.nameHindi || 'Popular in your food library'}</span>
+                      </div>
+                      <div className="guide-food-metric">
+                        <em>{highlight}</em>
+                        <small>{food.category} · {food.dietType === 'non_veg' ? 'non-veg' : 'veg'}</small>
+                      </div>
+                    </div>
+                  )) : <p className="muted">No strong matches found yet for this nutrient.</p>}
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }

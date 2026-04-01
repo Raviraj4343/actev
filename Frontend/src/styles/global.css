@@ -533,6 +533,8 @@ a:hover{color:var(--color-accent);text-decoration:underline}
 .guide-radar-legend{display:grid;gap:10px}
 .guide-radar-legend-item{display:grid;gap:12px;padding:14px 16px;border-radius:18px;background:rgba(233,239,241,0.68);border:1px solid rgba(233,239,241,0.64);transition:border-color .16s ease,box-shadow .16s ease,transform .16s ease,background .16s ease;cursor:pointer}
 .guide-radar-legend-item.active{border-color:rgba(2,132,199,0.34);box-shadow:0 16px 30px rgba(2,132,199,0.12);transform:translateY(-1px) scale(1.01);background:linear-gradient(145deg,rgba(233,239,241,0.96),rgba(231,247,252,0.94))}
+.guide-radar-legend-item.actionable{position:relative}
+.guide-radar-legend-item.actionable small{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(7,89,133,0.72)}
 .guide-radar-legend-top{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .guide-radar-legend-item strong{font-size:15px;color:var(--color-text);transition:color .16s ease}
 .guide-radar-legend-item.active strong{color:var(--color-primary)}
@@ -565,6 +567,14 @@ a:hover{color:var(--color-accent);text-decoration:underline}
 .guide-recommendation-card{padding:18px;border-radius:20px;background:linear-gradient(135deg,rgba(8,47,73,0.92),rgba(12,94,110,0.9) 55%, rgba(34,139,110,0.88));color:#f8fdff;box-shadow:0 18px 34px rgba(8,47,73,0.18)}
 .guide-recommendation-card span{display:block;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:rgba(222,244,255,0.78);margin-bottom:10px}
 .guide-recommendation-card strong{display:block;font-size:16px;line-height:1.6;font-weight:600}
+.guide-food-modal{width:min(100%,680px)}
+.guide-food-list{display:grid;gap:10px}
+.guide-food-item{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding:14px 16px;border-radius:16px;background:rgba(233,239,241,0.74);border:1px solid rgba(233,239,241,0.68);box-shadow:0 10px 22px rgba(11,31,36,0.04)}
+.guide-food-item strong{display:block;font-size:15px;color:var(--color-text)}
+.guide-food-item span{display:block;font-size:13px;color:var(--color-muted);margin-top:4px}
+.guide-food-metric{display:grid;justify-items:end;gap:6px;text-align:right}
+.guide-food-metric em{font-style:normal;font-size:12px;font-weight:800;color:var(--color-primary);padding:5px 10px;border-radius:999px;background:rgba(233,239,241,0.8);border:1px solid rgba(2,132,199,0.16)}
+.guide-food-metric small{font-size:11px;color:var(--color-muted);text-transform:capitalize}
 .subs-list{display:flex;flex-direction:column;gap:12px}
 .sub-row{display:flex;justify-content:space-between;align-items:center;padding:8px;border-radius:8px;border:1px solid rgba(2,6,23,0.03);background:var(--color-surface)}
 
